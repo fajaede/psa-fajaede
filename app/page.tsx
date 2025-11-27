@@ -1,65 +1,304 @@
-import Image from "next/image";
+// pages/index.js
+import { useState } from "react";
 
 export default function Home() {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setResult(null);
+
+    // simpele URL-check
+    if (!url || !url.startsWith("http")) {
+      setError("Please enter a valid URL starting with http or https.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Scan failed. Please try again.");
+      }
+
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main
+      style={{
+        minHeight: "100vh",
+        margin: 0,
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        background: "#050505",
+        color: "#f5f5f5",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "40px 16px",
+      }}
+    >
+      {/* Hero & PSA shield brand */}
+      <section style={{ maxWidth: 720, textAlign: "center", marginBottom: 32 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "4px 10px",
+            borderRadius: 999,
+            background: "#111",
+            border: "1px solid #333",
+            fontSize: 12,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          <span style={{ color: "#ffdd00" }}>PSA</span>
+          <span style={{ color: "#999" }}>Certified by fajaedeAI</span>
+        </div>
+        <h1 style={{ fontSize: 32, marginTop: 16, marginBottom: 8 }}>
+          Check the PSA of any website or app
+        </h1>
+        <p style={{ fontSize: 16, color: "#ccc", marginBottom: 24 }}>
+          PSA = Privacy • Security • Age.  
+          Paste a URL, let fajaedeAI scan it, and get a shareable{" "}
+          <strong>“PSA Certified by fajaedeAI”</strong> shield.
+        </p>
+      </section>
+
+      {/* Search form */}
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          width: "100%",
+          maxWidth: 640,
+          display: "flex",
+          gap: 8,
+          marginBottom: 24,
+        }}
+      >
+        <input
+          type="url"
+          placeholder="https://example.com"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          style={{
+            flex: 1,
+            padding: "12px 14px",
+            borderRadius: 999,
+            border: "1px solid #333",
+            background: "#111",
+            color: "#f5f5f5",
+            fontSize: 14,
+            outline: "none",
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            padding: "12px 22px",
+            borderRadius: 999,
+            border: "none",
+            background: loading ? "#555" : "#ff0000",
+            color: "#fff",
+            fontWeight: 600,
+            cursor: loading ? "default" : "pointer",
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            fontSize: 13,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {loading ? "Scanning..." : "Scan PSA"}
+        </button>
+      </form>
+
+      {/* Error message */}
+      {error && (
+        <div
+          style={{
+            maxWidth: 640,
+            width: "100%",
+            marginBottom: 16,
+            padding: "10px 12px",
+            borderRadius: 8,
+            background: "#330000",
+            border: "1px solid #ff4d4f",
+            color: "#ffcccc",
+            fontSize: 13,
+          }}
+        >
+          {error}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      )}
+
+      {/* Result card */}
+      {result && (
+        <section
+          style={{
+            width: "100%",
+            maxWidth: 720,
+            marginTop: 8,
+            padding: 20,
+            borderRadius: 16,
+            background:
+              "linear-gradient(135deg, rgba(255,0,0,0.18), rgba(255,221,0,0.16))",
+            border: "1px solid #333",
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          {/* PSA shield visual */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 18,
+                background:
+                  "radial-gradient(circle at 30% 0%, #ffdd00, #ff0000 60%, #330000 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 0 2px #111, 0 0 20px rgba(255,0,0,0.7)",
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: 900,
+                  fontSize: 18,
+                  color: "#fff",
+                  textShadow: "0 1px 3px rgba(0,0,0,0.7)",
+                }}
+              >
+                PSA
+              </span>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 14,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  color: "#ffdd00",
+                  marginBottom: 4,
+                }}
+              >
+                PSA Certified by fajaedeAI
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>
+                Scan result for {result.url}
+              </div>
+              <div style={{ fontSize: 13, color: "#ddd" }}>
+                Status:{" "}
+                <strong style={{ color: "#00ff99" }}>
+                  {result.status.toUpperCase()}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Scores */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+              marginTop: 4,
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <ScoreBox label="Privacy" score={result.privacy.score} note={result.privacy.note} />
+            <ScoreBox label="Security" score={result.security.score} note={result.security.note} />
+            <ScoreBox label="Age" score={result.age.score} note={result.age.note} />
+          </div>
+
+          {/* Report link */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 8,
+              fontSize: 13,
+            }}
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <span style={{ color: "#eee" }}>
+              View or share the full PSA report:
+            </span>
+            <a
+              href={result.reportUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                border: "1px solid #ffdd00",
+                color: "#111",
+                background: "#ffdd00",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Open PSA report
+            </a>
+          </div>
+        </section>
+      )}
+
+      {/* Simple footer */}
+      <footer style={{ marginTop: "auto", paddingTop: 40, fontSize: 12, color: "#777" }}>
+        © {new Date().getFullYear()} fajaede.nl · PSA – Privacy Security Age · fajaedeAI
+      </footer>
+    </main>
+  );
+}
+
+function ScoreBox({ label, score, note }) {
+  return (
+    <div
+      style={{
+        padding: 12,
+        borderRadius: 12,
+        background: "rgba(5,5,5,0.7)",
+        border: "1px solid #333",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          textTransform: "uppercase",
+          letterSpacing: 1,
+          color: "#aaa",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+        {score}
+      </div>
+      <div style={{ fontSize: 12, color: "#ddd" }}>{note}</div>
     </div>
   );
 }
+
