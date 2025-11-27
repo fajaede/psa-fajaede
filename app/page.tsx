@@ -1,3 +1,4 @@
+"use client";
 // pages/index.js
 import { useState } from "react";
 
@@ -301,4 +302,3 @@ function ScoreBox({ label, score, note }) {
     </div>
   );
 }
-
