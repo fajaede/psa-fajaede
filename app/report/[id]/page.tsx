@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 
 type ReportPageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 function decodeUrl(id: string): string | null {
@@ -18,8 +18,9 @@ function decodeUrl(id: string): string | null {
 
 export const dynamic = "force-dynamic";
 
-export default async function ReportPage({ params }: ReportPageProps) {
-  const decodedUrl = decodeUrl(params.id);
+export default async function ReportPage(props: ReportPageProps) {
+  const { id } = await props.params;
+  const decodedUrl = decodeUrl(id);
   console.log(`[Report] Looking up URL in database: "${decodedUrl}"`);
 
   const report = decodedUrl
