@@ -3,10 +3,10 @@
 const prisma = new PrismaClient()
 
 async function main() {
-  await prisma.psaScan.create({
-    data: {
+  const rows = [
+    {
       url: 'https://fajaede.nl',
-      urlHash: 'aHR0cHM6Ly9mYWphZWRlLm5s',
+      urlHash: Buffer.from('https://fajaede.nl').toString('base64url'),
       pageTitle: 'Fajaede.nl - PSA Certified',
       privacyScore: '95',
       privacyNote: 'Excellent privacy practices',
@@ -16,9 +16,44 @@ async function main() {
       ageNote: 'Age-appropriate content',
       hasSchema: true,
       hasCookieBanner: true,
-    }
-  })
-  console.log('Seeded PsaScan!')
+    },
+    {
+      url: 'https://example.com',
+      urlHash: Buffer.from('https://example.com').toString('base64url'),
+      pageTitle: 'Example Domain',
+      privacyScore: 'P1 / 3',
+      privacyNote: 'No privacy policy found on the page',
+      securityScore: 'S2 / 3',
+      securityNote: 'Uses HTTPS',
+      ageScore: 'A1 / 3',
+      ageNote: 'General audience',
+      hasSchema: false,
+      hasCookieBanner: false,
+    },
+    {
+      url: 'https://google.com',
+      urlHash: Buffer.from('https://google.com').toString('base64url'),
+      pageTitle: 'Google',
+      privacyScore: 'P2 / 3',
+      privacyNote: 'Basic privacy/cookie info detected',
+      securityScore: 'S2 / 3',
+      securityNote: 'Strong security',
+      ageScore: 'A1 / 3',
+      ageNote: 'General audience',
+      hasSchema: true,
+      hasCookieBanner: true,
+    },
+  ];
+
+  for (const r of rows) {
+    await prisma.psaScan.upsert({
+      where: { url: r.url },
+      update: r,
+      create: r,
+    });
+  }
+
+  console.log('Seeded PsaScan rows (upserted).')
 }
 
 main()
