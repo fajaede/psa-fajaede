@@ -3,6 +3,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "env": {
-    "DATABASE_URL": "@psa_database_url"
+    "DATABASE_URL": "@database_url"
   }
 }
