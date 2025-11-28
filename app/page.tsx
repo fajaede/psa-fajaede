@@ -1,14 +1,13 @@
 "use client";
-// pages/index.js
-import { useState } from "react";
+import React, { useState } from "react";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<any>(null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setResult(null);
@@ -33,7 +32,7 @@ export default function Home() {
 
       const data = await res.json();
       setResult(data);
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -77,7 +76,7 @@ export default function Home() {
           Check the PSA of any website or app
         </h1>
         <p style={{ fontSize: 16, color: "#ccc", marginBottom: 24 }}>
-          PSA = Privacy • Security • Age.  
+          PSA = Privacy • Security • Age.{" "}
           Paste a URL, let fajaedeAI scan it, and get a shareable{" "}
           <strong>“PSA Certified by fajaedeAI”</strong> shield.
         </p>
@@ -226,9 +225,21 @@ export default function Home() {
               marginTop: 4,
             }}
           >
-            <ScoreBox label="Privacy" score={result.privacy.score} note={result.privacy.note} />
-            <ScoreBox label="Security" score={result.security.score} note={result.security.note} />
-            <ScoreBox label="Age" score={result.age.score} note={result.age.note} />
+            <ScoreBox
+              label="Privacy"
+              score={result.privacy.score}
+              note={result.privacy.note}
+            />
+            <ScoreBox
+              label="Security"
+              score={result.security.score}
+              note={result.security.note}
+            />
+            <ScoreBox
+              label="Age"
+              score={result.age.score}
+              note={result.age.note}
+            />
           </div>
 
           {/* Report link */}
@@ -267,14 +278,30 @@ export default function Home() {
       )}
 
       {/* Simple footer */}
-      <footer style={{ marginTop: "auto", paddingTop: 40, fontSize: 12, color: "#777" }}>
-        © {new Date().getFullYear()} fajaede.nl · PSA – Privacy Security Age · fajaedeAI
+      <footer
+        style={{
+          marginTop: "auto",
+          paddingTop: 40,
+          fontSize: 12,
+          color: "#777",
+        }}
+      >
+        © {new Date().getFullYear()} fajaede.nl · PSA – Privacy Security Age ·
+        fajaedeAI
       </footer>
     </main>
   );
 }
 
-function ScoreBox({ label, score, note }) {
+function ScoreBox({
+  label,
+  score,
+  note,
+}: {
+  label: string;
+  score: string;
+  note: string;
+}) {
   return (
     <div
       style={{
