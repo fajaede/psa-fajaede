@@ -1,16 +1,17 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { Buffer } from "buffer";
-// app/report/[id]/page.tsx
+
 type ReportPageProps = {
   params: { id: string };
 };
 
 function decodeUrl(id: string): string | null {
   try {
-    const url = Buffer.from(id, "base64url").toString("utf8");
-    return url.startsWith("http") ? url : null;
-  } catch {
+    const decoded = Buffer.from(id, "base64url").toString("utf8");
+    console.log(`[Report] Decoded ID "${id}" to URL: "${decoded}"`);
+    return decoded.startsWith("http") ? decoded : null;
+  } catch (error) {
+    console.error(`[Report] Failed to decode ID "${id}":`, error);
     return null;
   }
 }
@@ -19,13 +20,15 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportPage({ params }: ReportPageProps) {
   const decodedUrl = decodeUrl(params.id);
+  console.log(`[Report] Looking up URL in database: "${decodedUrl}"`);
 
   const report = decodedUrl
-   ? await prisma.psaScan.findUnique({
+    ? await prisma.psaScan.findUnique({
         where: { url: decodedUrl },
-
       })
     : null;
+
+  console.log(`[Report] Database lookup result:`, report ? "Found" : "Not found");
 
   return (
     <main

@@ -1,11 +1,12 @@
-// app/api/scan/route.ts
-export async function POST(request: Request) {
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
     const url = body?.url as string | undefined;
 
     if (!url || typeof url !== "string" || !/^https?:\/\//.test(url)) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Invalid or missing URL. Use http(s)://…" },
         { status: 400 }
       );
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     });
 
     if (!resp.ok) {
-      return Response.json(
+      return NextResponse.json(
         { error: `Could not fetch URL (status ${resp.status}).` },
         { status: 502 }
       );
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
 
     const urlHash = Buffer.from(url).toString("base64url");
 
-    return Response.json({
+    return NextResponse.json({
       url,
       status: "ok",
       pageTitle: title,
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     });
   } catch (e: any) {
     console.error("PSA scan error:", e);
-    return Response.json(
+    return NextResponse.json(
       { error: "Internal PSA scan error." },
       { status: 500 }
     );
