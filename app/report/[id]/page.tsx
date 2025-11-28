@@ -1,14 +1,17 @@
 // app/report/[id]/page.tsx
-import "server-only";
-
 type ReportPageProps = {
   params: { id: string };
 };
 
 function decodeUrl(id: string): string | null {
   try {
-    const padded = id.padEnd(id.length + ((4 - (id.length % 4)) % 4), "=");
-    const url = Buffer.from(padded, "base64").toString("utf8");
+    // base64url -> base64
+    let b64 = id.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4;
+    if (pad) {
+      b64 = b64.padEnd(b64.length + (4 - pad), "=");
+    }
+    const url = Buffer.from(b64, "base64").toString("utf8");
     return url.startsWith("http") ? url : null;
   } catch {
     return null;
@@ -23,7 +26,8 @@ export default function ReportPage({ params }: ReportPageProps) {
       style={{
         minHeight: "100vh",
         margin: 0,
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontFamily:
+          "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         background: "#050505",
         color: "#f5f5f5",
         display: "flex",
@@ -52,9 +56,7 @@ export default function ReportPage({ params }: ReportPageProps) {
           <span style={{ color: "#999" }}>Certified by fajaedeAI</span>
         </div>
 
-        <h1 style={{ fontSize: 28, marginBottom: 8 }}>
-          PSA Report link
-        </h1>
+        <h1 style={{ fontSize: 28, marginBottom: 8 }}>PSA Report link</h1>
 
         <p style={{ fontSize: 14, color: "#ccc", marginBottom: 24 }}>
           This is the public PSA certificate link for a scanned URL.
