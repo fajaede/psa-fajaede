@@ -1,3 +1,6 @@
+import "server-only";
+import { prisma } from "@/lib/prisma";
+import { Buffer } from "buffer";
 // app/report/[id]/page.tsx
 type ReportPageProps = {
   params: { id: string };
@@ -5,21 +8,24 @@ type ReportPageProps = {
 
 function decodeUrl(id: string): string | null {
   try {
-    // base64url -> base64
-    let b64 = id.replace(/-/g, "+").replace(/_/g, "/");
-    const pad = b64.length % 4;
-    if (pad) {
-      b64 = b64.padEnd(b64.length + (4 - pad), "=");
-    }
-    const url = Buffer.from(b64, "base64").toString("utf8");
+    const url = Buffer.from(id, "base64url").toString("utf8");
     return url.startsWith("http") ? url : null;
   } catch {
     return null;
   }
 }
 
-export default function ReportPage({ params }: ReportPageProps) {
+export const dynamic = "force-dynamic";
+
+export default async function ReportPage({ params }: ReportPageProps) {
   const decodedUrl = decodeUrl(params.id);
+
+  const report = decodedUrl
+   ? await prisma.psaScan.findUnique({
+        where: { url: decodedUrl },
+
+      })
+    : null;
 
   return (
     <main
@@ -82,7 +88,7 @@ export default function ReportPage({ params }: ReportPageProps) {
               fontSize: 13,
             }}
           >
-            {decodedUrl ?? "Invalid PSA report id"}
+            {report?.url ?? "Invalid PSA report id"}
           </p>
         </div>
       </section>

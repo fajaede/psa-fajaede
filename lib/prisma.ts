@@ -1,7 +1,5 @@
 // lib/prisma.ts
-import PrismaClientPkg from "@prisma/client";
-
-const PrismaClient = (PrismaClientPkg as any).PrismaClient || PrismaClientPkg;
+import { PrismaClient } from "@prisma/client";
 
 declare global {
   // eslint-disable-next-line no-var
