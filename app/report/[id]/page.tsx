@@ -19,17 +19,30 @@ function decodeUrl(id: string): string | null {
 export const dynamic = "force-dynamic";
 
 export default async function ReportPage(props: ReportPageProps) {
-  const { id } = await props.params;
-  const decodedUrl = decodeUrl(id);
-  console.log(`[Report] Looking up URL in database: "${decodedUrl}"`);
+  let decodedUrl: string | null = null;
+  let report = null;
+  let error = null;
 
-  const report = decodedUrl
-    ? await prisma.psaScan.findUnique({
+  try {
+    const { id } = await props.params;
+    decodedUrl = decodeUrl(id);
+    console.log(`[Report] Looking up URL in database: "${decodedUrl}"`);
+
+    if (decodedUrl) {
+      report = await prisma.psaScan.findUnique({
         where: { url: decodedUrl },
-      })
-    : null;
+      }).catch((err: any) => {
+        console.error(`[Report] Database error:`, err);
+        error = "Database connection failed";
+        return null;
+      });
+    }
 
-  console.log(`[Report] Database lookup result:`, report ? "Found" : "Not found");
+    console.log(`[Report] Database lookup result:`, report ? "Found" : "Not found");
+  } catch (err) {
+    console.error(`[Report] Unexpected error:`, err);
+    error = "An error occurred while loading the report";
+  }
 
   return (
     <main
@@ -92,9 +105,40 @@ export default async function ReportPage(props: ReportPageProps) {
               fontSize: 13,
             }}
           >
-            {report?.url ?? "Invalid PSA report id"}
+            {error ? `Error: ${error}` : (report?.url ?? "Invalid PSA report id")}
           </p>
         </div>
+
+        {report && (
+          <>
+            <div
+              style={{
+                padding: 20,
+                borderRadius: 16,
+                background: "linear-gradient(135deg, rgba(0,255,0,0.1), rgba(100,200,100,0.1))",
+                border: "1px solid #333",
+                marginBottom: 24,
+              }}
+            >
+              <h2 style={{ fontSize: 18, marginBottom: 16 }}>Analysis Results</h2>
+              
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, marginBottom: 4, color: "#ccc" }}>Privacy</h3>
+                <p style={{ margin: 0, fontSize: 13 }}><strong>{report.privacyScore}</strong> - {report.privacyNote}</p>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, marginBottom: 4, color: "#ccc" }}>Security</h3>
+                <p style={{ margin: 0, fontSize: 13 }}><strong>{report.securityScore}</strong> - {report.securityNote}</p>
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: 14, marginBottom: 4, color: "#ccc" }}>Age Appropriateness</h3>
+                <p style={{ margin: 0, fontSize: 13 }}><strong>{report.ageScore}</strong> - {report.ageNote}</p>
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       <footer
