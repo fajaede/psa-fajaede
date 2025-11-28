@@ -1,15 +1,15 @@
 // lib/prisma.ts
-import * as PrismaPkg from "@prisma/client";
+import PrismaClientPkg from "@prisma/client";
 
-const { PrismaClient } = PrismaPkg;
+const PrismaClient = (PrismaClientPkg as any).PrismaClient || PrismaClientPkg;
 
 declare global {
   // eslint-disable-next-line no-var
-  var prisma: InstanceType<typeof PrismaClient> | undefined;
+  var prisma: any | undefined;
 }
 
-export const prisma = global.prisma ?? new PrismaClient();
+export const prisma = globalThis.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
+  globalThis.prisma = prisma;
 }
