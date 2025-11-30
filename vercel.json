@@ -1,8 +1,5 @@
 {
   "buildCommand": "prisma generate && prisma db push --skip-generate && next build",
   "installCommand": "npm install",
-  "framework": "nextjs",
-  "env": {
-    "DATABASE_URL": "@database_url"
-  }
+  "framework": "nextjs"
 }
