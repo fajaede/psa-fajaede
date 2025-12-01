@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import "server-only";
-import fetch from "node-fetch";
 import { prisma } from "@/lib/prisma";
 
 const PAYPAL_MODE = process.env.PAYPAL_MODE || "sandbox"; // sandbox or live
