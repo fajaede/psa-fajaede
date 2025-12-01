@@ -22,6 +22,7 @@ export default async function ReportPage(props: ReportPageProps) {
   let decodedUrl: string | null = null;
   let report = null;
   let error = null;
+  let isExpired = false;
 
   try {
     const { id } = await props.params;
@@ -36,6 +37,11 @@ export default async function ReportPage(props: ReportPageProps) {
         error = "Database connection failed";
         return null;
       });
+
+      if (report && report.expiresAt && new Date(report.expiresAt) < new Date()) {
+        isExpired = true;
+        console.log(`[Report] Certificate expired for ${decodedUrl}`);
+      }
     }
 
     console.log(`[Report] Database lookup result:`, report ? "Found" : "Not found");
@@ -85,6 +91,30 @@ export default async function ReportPage(props: ReportPageProps) {
           This is the public PSA certificate link for a scanned URL.
         </p>
 
+        {isExpired && (
+          <div
+            style={{
+              padding: 16,
+              borderRadius: 16,
+              background: "linear-gradient(135deg, rgba(255,100,0,0.2), rgba(255,150,0,0.2))",
+              border: "1px solid #ff6600",
+              marginBottom: 24,
+              color: "#ffb366",
+            }}
+          >
+            <h2 style={{ fontSize: 16, margin: "0 0 8px 0", color: "#ff9933" }}>
+              ⚠ Certificate Expired
+            </h2>
+            <p style={{ margin: 0, fontSize: 13 }}>
+              This certificate expired on {report?.expiresAt && new Date(report.expiresAt).toLocaleDateString()}.
+              <br />
+                <a href={`/api/paypal/create-subscription?url=${encodeURIComponent(report?.url || '')}`} style={{ color: "#ffb366", textDecoration: "underline" }}>
+                  Renew certificate (€1/year via PayPal)
+                </a>
+            </p>
+          </div>
+        )}
+
         <div
           style={{
             padding: 20,
@@ -132,9 +162,18 @@ export default async function ReportPage(props: ReportPageProps) {
                 <p style={{ margin: 0, fontSize: 13 }}><strong>{report.securityScore}</strong> - {report.securityNote}</p>
               </div>
 
-              <div>
+              <div style={{ marginBottom: 16 }}>
                 <h3 style={{ fontSize: 14, marginBottom: 4, color: "#ccc" }}>Age Appropriateness</h3>
                 <p style={{ margin: 0, fontSize: 13 }}><strong>{report.ageScore}</strong> - {report.ageNote}</p>
+              </div>
+
+              <div style={{ borderTop: "1px solid #333", paddingTop: 12, fontSize: 12, color: "#888" }}>
+                <p style={{ margin: "0 0 4px 0" }}>
+                  Issued: {new Date(report.createdAt).toLocaleDateString()}
+                </p>
+                <p style={{ margin: 0 }}>
+                  Expires: {new Date(report.expiresAt).toLocaleDateString()}
+                </p>
               </div>
             </div>
           </>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -63,6 +64,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const urlHash = Buffer.from(url).toString("base64url");
 
+    // Calculate expiry: 1 year from now
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+    // Save to database
+    await prisma.psaScan.upsert({
+      where: { url },
+      update: {
+        pageTitle: title,
+        privacyScore,
+        privacyNote,
+        securityScore,
+        securityNote,
+        ageScore,
+        ageNote,
+        expiresAt,
+      },
+      create: {
+        url,
+        urlHash,
+        pageTitle: title,
+        privacyScore,
+        privacyNote,
+        securityScore,
+        securityNote,
+        ageScore,
+        ageNote,
+        expiresAt,
+      },
+    });
+
     return NextResponse.json({
       url,
       status: "ok",
@@ -71,6 +103,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       security: { score: securityScore, note: securityNote },
       age: { score: ageScore, note: ageNote },
       reportUrl: `https://psa.fajaede.nl/report/${urlHash}`,
+      expiresAt: expiresAt.toISOString(),
       fromCache: false,
     });
   } catch (e: any) {
