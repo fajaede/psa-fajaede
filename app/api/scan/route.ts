@@ -102,11 +102,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       privacy: { score: privacyScore, note: privacyNote },
       security: { score: securityScore, note: securityNote },
       age: { score: ageScore, note: ageNote },
-      reportUrl: `https://psa.fajaede.nl/report/${urlHash}`,
+      reportUrl: `/report/${urlHash}`,
       expiresAt: expiresAt.toISOString(),
       fromCache: false,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("PSA scan error:", e);
     return NextResponse.json(
       { error: "Internal PSA scan error." },
@@ -114,4 +114,3 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
-
