@@ -69,7 +69,12 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        throw new Error("Scan failed. Please try again.");
+        let errorMessage = "Scan failed. Please try again.";
+        try {
+          const errData = await res.json();
+          if (errData.error) errorMessage = errData.error;
+        } catch {} // Negeer fouten als er geen geldige JSON is
+        throw new Error(errorMessage);
       }
 
       const data = await res.json();
@@ -153,7 +158,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Tools & Automation</h4>
-                  <DropdownItem icon="🚀" title="FajaedeSEO AI" color="#00ff99" />
+                  <DropdownItem icon="🚀" title="FajaedeSEO AI" color="#00ff99" href="https://www.fajaede.nl/download" />
                   <DropdownItem icon="⚡" title="Bulk Meta & Audits" />
                   <DropdownItem icon="🏗️" title="Website & Schema Gen" />
                   <DropdownItem icon="📄" title="White Label Reports" />
@@ -480,7 +485,7 @@ export default function Home() {
               Verlies geen organisch verkeer meer door technische CMS- of privacyfouten in je website. Koppel jouw website aan onze Intelligence Layer en laat de AI alles automatisch optimaliseren.
             </p>
             <a 
-              href="https://fajaede.nl/download.php" 
+              href="https://www.fajaede.nl/download" 
               target="_blank" 
               rel="noopener noreferrer" 
               style={{ display: "inline-block", width: "100%", padding: "18px 24px", background: result.scanMode === "seo" ? "#00ff99" : "#00aaff", color: "#000", fontWeight: 900, fontSize: 16, textTransform: "uppercase", letterSpacing: 1, borderRadius: 8, textDecoration: "none", boxShadow: `0 4px 20px ${result.scanMode === "seo" ? "rgba(0,255,153,0.3)" : "rgba(0,170,255,0.3)"}`, transition: "transform 0.2s" }}
