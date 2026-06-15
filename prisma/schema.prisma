@@ -24,3 +24,21 @@ model PsaScan {
   updatedAt       DateTime @updatedAt
   expiresAt       DateTime?
 }
+
+model SeoScan {
+  id             String   @id @default(cuid())
+  url            String   @unique
+  trustScore     Int
+  criticalIssues String[]
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model GeoScan {
+  id             String   @id @default(cuid())
+  url            String   @unique
+  trustScore     Int
+  criticalIssues String[]
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}

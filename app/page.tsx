@@ -11,6 +11,8 @@ type ScanResult = {
   improvements?: string[];
   scanMode?: "psa" | "seo" | "geo";
   criticalIssues?: string[];
+  fromCache?: boolean;
+  cachedAt?: string;
   [key: string]: unknown;
 };
 
@@ -415,6 +417,25 @@ export default function Home() {
             {result.scanMode === "seo" ? "SEO & Privacy Audit Report" : "GEO Local Audit Report"}
           </h2>
           <p style={{ color: "#aaa", margin: 0, fontSize: 16 }}>Geanalyseerd domein: <strong style={{ color: "#fff" }}>{result.url}</strong></p>
+
+          {/* CACHE & PREMIUM UPSELL BANNER ("The Big Boy Way") */}
+          {result.fromCache && (
+            <div style={{ background: "rgba(255, 221, 0, 0.05)", border: "1px solid rgba(255, 221, 0, 0.4)", borderRadius: 12, padding: 24, textAlign: "left", boxShadow: "0 4px 20px rgba(255, 221, 0, 0.1)", marginTop: 16 }}>
+              <h4 style={{ color: "#ffdd00", margin: "0 0 8px 0", fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>⚡</span> Opgeslagen Rapport (Cache)
+              </h4>
+              <p style={{ color: "#ccc", margin: "0 0 16px 0", fontSize: 14, lineHeight: 1.5 }}>
+                Dit is een eerder gegenereerde scan van <strong>{new Date(result.cachedAt!).toLocaleString("nl-NL")}</strong>. Heb je zojuist aanpassingen gedaan aan je website en wil je een nieuwe, live re-crawl uitvoeren om te zien of je fouten zijn opgelost?
+              </p>
+              <button 
+                style={{ background: "#ffdd00", color: "#000", border: "none", padding: "12px 20px", borderRadius: 8, fontWeight: 800, cursor: "pointer", fontSize: 14, transition: "transform 0.2s" }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} 
+                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Upgrade naar Premium voor Live Re-crawls 🚀
+              </button>
+            </div>
+          )}
 
           {/* De Schokkende Score */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "32px 0" }}>

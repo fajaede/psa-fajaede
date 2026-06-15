@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -7,6 +8,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!url || typeof url !== "string" || !/^https?:\/\//.test(url)) {
       return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+    }
+
+    const cleanUrl = url.toLowerCase().replace(/\/$/, "");
+
+    // 1. Check de Prisma Database Cache (Permanent bewaard, tot na de betaling)
+    const cachedScan = await prisma.geoScan.findUnique({
+      where: { url: cleanUrl }
+    });
+
+    if (cachedScan) {
+      return NextResponse.json({
+        trustScore: cachedScan.trustScore,
+        criticalIssues: cachedScan.criticalIssues,
+        fromCache: true,
+        cachedAt: cachedScan.createdAt.toISOString(),
+      });
     }
 
     const startTime = Date.now();
@@ -76,10 +93,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       issues.push(`Trage server response (${fetchTime}ms). Lokale mobiele zoekers (on-the-go) verlaten trage websites direct.`);
     }
 
-    return NextResponse.json({
+    const responseData = {
       trustScore: Math.max(12, score), // Zorg dat de score nooit onder de 12 zakt
       criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je lokale SEO basis staat als een huis!"],
+    };
+
+    // 3. Sla het resultaat permanent op in de database
+    await prisma.geoScan.upsert({
+      where: { url: cleanUrl },
+      update: {
+        trustScore: responseData.trustScore,
+        criticalIssues: responseData.criticalIssues,
+        createdAt: new Date(),
+      },
+      create: {
+        url: cleanUrl,
+        trustScore: responseData.trustScore,
+        criticalIssues: responseData.criticalIssues,
+      }
     });
+
+    return NextResponse.json(responseData);
   } catch (e: unknown) {
     console.error("GEO scan error:", e);
     return NextResponse.json({ error: "GEO scan failed" }, { status: 500 });
