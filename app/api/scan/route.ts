@@ -55,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const hasTrackers = lower.includes('google-analytics') || lower.includes('gtag(') || lower.includes('fbq(') || lower.includes('hotjar');
     const hasCookieBanner = lower.includes('cookiebot') || lower.includes('complianz') || lower.includes('borlabs') || lower.includes('cookieyes');
     // Semantisch zoeken naar een privacy of voorwaarden link (meestal in footer)
-    const hasPrivacyLink = /<a[^>]*href=[^>]*>([^<]*(privacy|cookie|voorwaarden|gdpr|avg)[^<]*)<\/a>/i.test(html);
+    const hasPrivacyLink = /<a[^>]*href=[^>]*>([^<]*(privacy|cookie|voorwaarden|gdpr|avg|policy)[^<]*)<\/a>/i.test(html) || /href=["'][^"']*(privacy|cookie|voorwaarden|gdpr|avg|policy)["']/i.test(html);
 
     let privacyScore = "P2 / 3";
     let privacyNote = "Basis privacy informatie aanwezig.";
@@ -72,7 +72,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // --- 2. SECURITY (Technische Beveiliging) ---
-    const isHttps = url.startsWith("https://");
+    // Check of de originele URL https is, of dat de server ons veilig heeft geredirect naar een https:// link
+    const isHttps = url.startsWith("https://") || resp.url.startsWith("https://");
     // We checken de headers die we van de server kregen op moderne beveiligingsstandaarden
     const headers = resp.headers;
     const hasHsts = headers.get('strict-transport-security') !== null;
@@ -157,9 +158,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   } catch (e: unknown) {
     console.error("PSA scan error:", e);
+    
+    const isTimeout = e instanceof Error && (e.name === "TimeoutError" || e.message.includes("timeout"));
+    const friendlyError = isTimeout ? "Scan timeout: De website reageert te traag (> 8.5s). Probeer het later nog eens." : "De scan is mislukt door een onverwachte server fout.";
+
     return NextResponse.json(
-      { error: "Internal PSA scan error." },
-      { status: 500 }
+      { error: friendlyError },
+      { status: isTimeout ? 504 : 500 }
     );
   }
 }
