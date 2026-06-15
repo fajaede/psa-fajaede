@@ -151,6 +151,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Tools & Automation</h4>
+                  <DropdownItem icon="🚀" title="FajaedeSEO AI" color="#00ff99" />
                   <DropdownItem icon="⚡" title="Bulk Meta & Audits" />
                   <DropdownItem icon="🏗️" title="Website & Schema Gen" />
                   <DropdownItem icon="📄" title="White Label Reports" />
