@@ -5,7 +5,13 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString });
+// Configureer de Pool specifiek voor Vercel / Productie omgevingen
+const pool = new Pool({ 
+  connectionString,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+  max: 10, // Voorkom te veel connecties in serverless omgevingen
+  idleTimeoutMillis: 15000,
+});
 const adapter = new PrismaPg(pool);
 
 declare global {

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 
+export const dynamic = "force-dynamic"; // Voorkomt database queries tijdens het Vercel bouwproces
+
 export default async function EmbedBadge({ searchParams }: { searchParams: Promise<{ url?: string }> }) {
   const params = await searchParams;
   const url = params.url;
