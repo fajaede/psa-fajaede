@@ -8,7 +8,7 @@ const connectionString = process.env.DATABASE_URL;
 // Configureer de Pool specifiek voor Vercel / Productie omgevingen
 const pool = new Pool({ 
   connectionString,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
+  // ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined, // Dit wordt nu direct in de connection string geregeld.
   max: 10, // Voorkom te veel connecties in serverless omgevingen
   idleTimeoutMillis: 15000,
 });
