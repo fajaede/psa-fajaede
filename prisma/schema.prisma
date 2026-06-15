@@ -1,6 +1,5 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -20,6 +19,7 @@ model PsaScan {
   ageNote         String?
   hasSchema       Boolean  @default(false)
   hasCookieBanner Boolean  @default(false)
+  isPaid          Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   expiresAt       DateTime?

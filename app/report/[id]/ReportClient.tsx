@@ -12,10 +12,12 @@ type ReportData = {
   privacyNote?: string | null;
   ageScore?: string | null;
   ageNote?: string | null;
+  isPaid?: boolean;
 };
 
 export default function ReportClient({ report }: { report: ReportData }) {
   const [isCoreOpen, setIsCoreOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Live berekening van de Trust Score aan de hand van de scores (P1/S1/A1)
   let trustScore = 100;
@@ -26,6 +28,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
   if (report.ageScore?.includes("A3")) { trustScore -= 10; improvements.push("Adult content flagged"); }
 
   const isGold = trustScore >= 90;
+  const embedCode = `<iframe src="https://fajaede.nl/embed/psa?url=${encodeURIComponent(report.url)}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
 
   return (
     <main
@@ -41,7 +44,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
       }}
     >
       {/* FajaedeAI Core Header (Exact overgenomen van de homepagina) */}
-      <header style={{ width: "100%", maxWidth: 1200, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0 64px 0" }}>
+      <header style={{ position: "relative", zIndex: 100, width: "100%", maxWidth: 1200, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0 64px 0" }}>
         <Link href="/" style={{ textDecoration: "none" }}>
           <div style={{ fontWeight: 900, fontSize: 24, color: "#fff", letterSpacing: -1, cursor: "pointer" }}>
             fajaede<span style={{ color: "#ffdd00" }}>AI</span>
@@ -86,6 +89,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
                   <DropdownItem icon="🔗" title="Link Manager" />
                   <DropdownItem icon="🤖" title="AI Chatbot Assistant" />
                 </div>
+
               </div>
             )}
           </div>
@@ -142,6 +146,45 @@ export default function ReportClient({ report }: { report: ReportData }) {
                 ))}
               </ul>
             </div>
+          )}
+        </div>
+
+        {/* EMBED WIDGET & KASSA */}
+        <div style={{ marginTop: 32, padding: 32, background: "#111", borderRadius: 16, border: "1px solid #333", textAlign: "center" }}>
+          <h4 style={{ color: "#fff", marginBottom: 12, fontSize: 20 }}>Embed de Trust Badge op jouw website</h4>
+          <p style={{ color: "#aaa", fontSize: 15, marginBottom: 20 }}>
+            Kopieer de onderstaande HTML-code en plak deze in de footer of sidebar van jouw website.
+          </p>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#000", border: "1px solid #444", padding: "12px 16px", borderRadius: 8, marginBottom: 24, textAlign: "left", overflowX: "auto" }}>
+            <code style={{ color: "#0f0", fontSize: 14, whiteSpace: "nowrap", flex: 1 }}>
+              {embedCode}
+            </code>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(embedCode);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              style={{ background: copied ? "#00a300" : "#333", color: "#fff", border: "1px solid #555", padding: "10px 20px", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 14, transition: "background 0.2s", whiteSpace: "nowrap" }}
+            >
+              {copied ? "Gekopieerd!" : "Kopieer Code"}
+            </button>
+          </div>
+
+          {report.isPaid ? (
+            <p style={{ color: "#00ff00", fontSize: 14, marginBottom: 16, fontWeight: "bold" }}>
+              ✅ Actieve licentie: Jouw Trust Badge is geverifieerd en live!
+            </p>
+          ) : (
+            <>
+              <p style={{ color: "#888", fontSize: 13, marginBottom: 16 }}>
+                Let op: Zonder actieve licentie toont de badge mogelijk &quot;Unverified&quot; aan je bezoekers.
+              </p>
+              <a href="https://www.fajaede.nl/afrekenen" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", textDecoration: "none", padding: "12px 24px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
+                Koop PSA Licentie (€9/jaar)
+              </a>
+            </>
           )}
         </div>
 

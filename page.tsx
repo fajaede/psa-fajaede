@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 
-export default async function EmbedBadge({ searchParams }: { searchParams: { url?: string } }) {
-  const url = searchParams.url;
+export default async function EmbedBadge({ searchParams }: { searchParams: Promise<{ url?: string }> }) {
+  const params = await searchParams;
+  const url = params.url;
   let trustScore = 100;
   let isCertified = false;
 
@@ -17,7 +18,8 @@ export default async function EmbedBadge({ searchParams }: { searchParams: { url
       if (report.securityScore?.includes("S1")) trustScore -= 30;
       if (report.privacyScore?.includes("P1")) trustScore -= 20;
       if (report.ageScore?.includes("A3")) trustScore -= 10;
-      isCertified = true;
+      // Check of deze klant daadwerkelijk de factuur betaald heeft
+      isCertified = report.isPaid === true;
     }
   }
 

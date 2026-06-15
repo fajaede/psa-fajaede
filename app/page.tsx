@@ -1,6 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import Image from "next/image";
+import React, { useState, useEffect } from "react";
 
 type ScanResult = {
   trustScore?: number;
@@ -10,6 +9,8 @@ type ScanResult = {
   security?: { score: string | number; note: string };
   age?: { score: string | number; note: string };
   improvements?: string[];
+  scanMode?: "psa" | "seo" | "geo";
+  criticalIssues?: string[];
   [key: string]: unknown;
 };
 
@@ -19,6 +20,27 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isCoreOpen, setIsCoreOpen] = useState(false);
+  const [scanMode, setScanMode] = useState<"psa" | "seo" | "geo">("psa");
+
+  // Terminal Scan Animatie States
+  const [loadingStep, setLoadingStep] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (loading) {
+      setLoadingStep(0);
+      interval = setInterval(() => {
+        setLoadingStep((prev) => (prev < 4 ? prev + 1 : prev));
+      }, 600);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  const getLoadingSteps = () => {
+    if (scanMode === "psa") return ["Initiating FajaedeAI Core Engine...", "Analyzing SSL & cryptographic protocols...", "Crawling DOM for GDPR compliance...", "Running semantic vulnerability checks...", "Calculating Final Trust Score..."];
+    if (scanMode === "seo") return ["Initiating FajaedeAI SEO Crawler...", "Analyzing Core Web Vitals & LCP...", "Checking Dynamic Schema & AI endpoints...", "Evaluating keyword density...", "Compiling critical issue report..."];
+    return ["Initiating GEO-Spatial Engine...", "Locating Google Maps coordinates...", "Analyzing NAP consistency...", "Evaluating local domain authority...", "Generating Market Overview..."];
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,8 +54,13 @@ export default function Home() {
     }
 
     setLoading(true);
+
     try {
-      const res = await fetch("/api/scan", {
+      // Wacht kunstmatig heel even extra (1 seconde) zodat de coole animatie altijd goed zichtbaar is voor de gebruiker
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const endpoint = scanMode === "seo" ? "/api/seo" : scanMode === "geo" ? "/api/geo" : "/api/scan";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
@@ -44,7 +71,8 @@ export default function Home() {
       }
 
       const data = await res.json();
-      setResult(data);
+      // Koppel de gekozen scanMode aan het resultaat
+      setResult({ ...data, scanMode, url });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -60,14 +88,29 @@ export default function Home() {
         fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         background: "#050505",
         color: "#f5f5f5",
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         padding: "0 16px 40px 16px",
       }}
     >
+      {/* Subtiele Rode Gloed op de achtergrond */}
+      <div style={{
+        position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+        width: "100%", maxWidth: 800, height: 600,
+        background: "radial-gradient(circle at top center, rgba(255,0,0,0.15) 0%, rgba(5,5,5,0) 70%)",
+        pointerEvents: "none", zIndex: 0
+      }} />
+      
+      {/* Dynamische gekleurde gloed voor SEO/GEO */}
+      {scanMode === "seo" && <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 800, height: 600, background: "radial-gradient(circle at top center, rgba(0,255,153,0.15) 0%, rgba(5,5,5,0) 70%)", pointerEvents: "none", zIndex: 0 }} />}
+      {scanMode === "geo" && <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 800, height: 600, background: "radial-gradient(circle at top center, rgba(0,170,255,0.15) 0%, rgba(5,5,5,0) 70%)", pointerEvents: "none", zIndex: 0 }} />}
+
       {/* Global Navigation Bar */}
-      <header style={{ 
+      <header style={{
+        position: "relative",
+        zIndex: 100,
         width: "100%", 
         maxWidth: 1200, 
         display: "flex", 
@@ -135,7 +178,7 @@ export default function Home() {
       </header>
 
       {/* Hero & PSA shield brand */}
-      <section style={{ maxWidth: 720, textAlign: "center", marginBottom: 32 }}>
+      <section style={{ position: "relative", zIndex: 10, maxWidth: 800, textAlign: "center", marginBottom: 40, marginTop: 40 }}>
         <div
           style={{
             display: "inline-flex",
@@ -150,71 +193,134 @@ export default function Home() {
             letterSpacing: 1,
           }}
         >
-          <span style={{ color: "#ffdd00" }}>PSA</span>
-          <span style={{ color: "#999" }}>Certified by fajaedeAI</span>
+          <span style={{ color: "#ffdd00", fontWeight: "bold" }}>FajaedeAI</span>
+          <span style={{ color: "#999", fontWeight: 500 }}>The Ultimate Intelligence Layer</span>
         </div>
-        <h1 style={{ fontSize: 32, marginTop: 16, marginBottom: 8 }}>
-          Check the PSA of any website or app
+        <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 900, marginTop: 24, marginBottom: 16, lineHeight: 1.1, letterSpacing: -1 }}>
+          The Intelligence Layer <br/>
+          for <span style={{ 
+            color: scanMode === "psa" ? "#ff0000" : scanMode === "seo" ? "#00ff99" : "#00aaff",
+            transition: "color 0.3s"
+          }}>
+            {scanMode === "psa" && "Digital Trust"}
+            {scanMode === "seo" && "Search Dominance"}
+            {scanMode === "geo" && "Local Visibility"}
+          </span>
         </h1>
-        <p style={{ fontSize: 16, color: "#ccc", marginBottom: 24 }}>
-          PSA = Privacy • Security • Age.{" "}
-          Paste a URL, let fajaedeAI scan it, and get a shareable{" "}
-          <strong>“PSA Certified by fajaedeAI”</strong> shield.
+        <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#aaa", marginBottom: 32, maxWidth: 640, margin: "0 auto 32px auto", lineHeight: 1.5 }}>
+          {scanMode === "psa" && "De alles-in-één scan voor Privacy, Security & Age compliance. Scan jouw website gratis en ontdek of je in aanmerking komt voor het onkopieerbare PSA Certificaat."}
+          {scanMode === "seo" && "De ultieme SEO Audit Engine voor FajaedeSEO AI klanten. Analyseer direct on-page factoren, backlinks en technische pijnpunten."}
+          {scanMode === "geo" && "Domineer jouw lokale markt. Check live je Google Maps posities en lokale autoriteit voor specifieke zoekwoorden en regio's."}
         </p>
+
+        {/* Multi-Tool Tab Switcher */}
+        <div style={{ display: "inline-flex", gap: 8, background: "rgba(255,255,255,0.05)", padding: 6, borderRadius: 999, marginBottom: 16, position: "relative", zIndex: 10, border: "1px solid #333", backdropFilter: "blur(10px)" }}>
+          <button onClick={() => setScanMode("psa")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "psa" ? "#ff0000" : "transparent", color: scanMode === "psa" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
+            🛡️ PSA Trust
+          </button>
+          <button onClick={() => setScanMode("seo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "seo" ? "#00ff99" : "transparent", color: scanMode === "seo" ? "#000" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
+            📈 SEO Audit
+          </button>
+          <button onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
+            🌍 GEO Local
+          </button>
+        </div>
       </section>
 
       {/* Search form */}
       <form
         onSubmit={handleSubmit}
         style={{
+          position: "relative",
+          zIndex: 10,
           width: "100%",
-          maxWidth: 640,
+          maxWidth: 720,
           display: "flex",
           gap: 8,
           marginBottom: 24,
+          boxShadow: "0 10px 40px rgba(255,0,0,0.1)",
         }}
       >
         <input
           type="url"
-          placeholder="https://example.com"
+          placeholder="https://jouwwebsite.nl"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           style={{
             flex: 1,
-            padding: "12px 14px",
+            padding: "18px 24px",
             borderRadius: 999,
-            border: "1px solid #333",
-            background: "#111",
+            border: "1px solid #444",
+            background: "rgba(10,10,10,0.8)",
+            backdropFilter: "blur(10px)",
             color: "#f5f5f5",
-            fontSize: 14,
+            fontSize: 16,
             outline: "none",
+            transition: "border 0.2s",
           }}
+          onFocus={(e) => e.target.style.borderColor = '#ff0000'}
+          onBlur={(e) => e.target.style.borderColor = '#444'}
         />
         <button
           type="submit"
           disabled={loading}
           style={{
-            padding: "12px 22px",
+            padding: "18px 36px",
             borderRadius: 999,
             border: "none",
-            background: loading ? "#555" : "#ff0000",
-            color: "#fff",
-            fontWeight: 600,
+            background: loading ? "#555" : scanMode === "psa" ? "#ff0000" : scanMode === "seo" ? "#00ff99" : "#00aaff",
+            color: scanMode === "seo" && !loading ? "#000" : "#fff",
+            fontWeight: 800,
             cursor: loading ? "default" : "pointer",
             textTransform: "uppercase",
             letterSpacing: 1,
-            fontSize: 13,
+            fontSize: 15,
             whiteSpace: "nowrap",
+            transition: "all 0.3s",
+            boxShadow: loading ? "none" : 
+              scanMode === "psa" ? "0 4px 15px rgba(255,0,0,0.3)" : 
+              scanMode === "seo" ? "0 4px 15px rgba(0,255,153,0.3)" : 
+              "0 4px 15px rgba(0,170,255,0.3)",
           }}
         >
-          {loading ? "Scanning..." : "Scan PSA"}
+          {loading ? "Scanning..." : `Scan ${scanMode.toUpperCase()}`}
         </button>
       </form>
+
+      {/* De Live Terminal Animatie */}
+      {loading && (
+        <div style={{
+          position: "relative",
+          zIndex: 10,
+          width: "100%",
+          maxWidth: 720,
+          background: "#000",
+          border: "1px solid #333",
+          borderRadius: 12,
+          padding: 24,
+          marginBottom: 32,
+          fontFamily: "monospace",
+          boxShadow: "inset 0 0 20px rgba(0,0,0,1)"
+        }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff4d4f" }} />
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ffdd00" }} />
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#00ff99" }} />
+          </div>
+          {getLoadingSteps().map((step, index) => (
+            <div key={index} style={{ color: index === loadingStep ? (scanMode === "psa" ? "#ffdd00" : scanMode === "seo" ? "#00ff99" : "#00aaff") : index < loadingStep ? "#555" : "transparent", fontSize: 14, marginBottom: 8, transition: "color 0.1s" }}>
+              <span style={{ opacity: 0.5, marginRight: 8 }}>{`[${new Date().toISOString().substring(11, 23)}]`}</span> {step}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Error message */}
       {error && (
         <div
           style={{
+            position: "relative",
+            zIndex: 10,
             maxWidth: 640,
             width: "100%",
             marginBottom: 16,
@@ -230,242 +336,191 @@ export default function Home() {
         </div>
       )}
 
-      {/* Result card */}
-      {result && (
+      {/* Social Proof Counter */}
+      {!result && !loading && (
+        <div style={{ position: "relative", zIndex: 10, marginTop: 4, display: "flex", alignItems: "center", gap: 10, background: "rgba(0, 255, 153, 0.05)", border: "1px solid rgba(0, 255, 153, 0.2)", padding: "8px 20px", borderRadius: 999, color: "#00ff99", fontSize: 13, fontWeight: 600, letterSpacing: 0.5 }}>
+          {/* De oplichtende neon-stip */}
+          <span style={{ display: "inline-block", width: 8, height: 8, background: "#00ff99", borderRadius: "50%", boxShadow: "0 0 10px #00ff99" }}></span>
+          <span>1,423 websites beveiligd en geoptimaliseerd deze maand</span>
+        </div>
+      )}
+
+      {/* Informatie sectie - Alleen zichtbaar als er GEEN zoekresultaat is */}
+      {!result && !loading && (
+        <section style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24, width: "100%", maxWidth: 1000, marginTop: 48 }}>
+          
+          <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>🔒</div>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Privacy & GDPR</h3>
+            <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+              Zorg dat jouw website voldoet aan de laatste AVG wetgeving. Wij controleren direct op de aanwezigheid van correcte cookie banners en privacy policies.
+            </p>
+          </div>
+
+          <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>🛡️</div>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Technical Security</h3>
+            <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+              Bescherm je bezoekers tegen datalekken. Onze bot controleert of SSL-certificaten aanwezig zijn en je data veilig en versleuteld verstuurd wordt.
+            </p>
+          </div>
+
+          <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>🔞</div>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Age & Content Check</h3>
+            <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+              Voorkom dat je website ten onrechte als schadelijk of adult (18+) gemarkeerd wordt. De AI analyseert je teksten op risico-woorden.
+            </p>
+          </div>
+
+        </section>
+      )}
+
+      {!result && !loading && (
+        <div style={{ position: "relative", zIndex: 10, marginTop: 64, textAlign: "center" }}>
+          <p style={{ color: "#555", fontSize: 13, textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>Trusted by forward-thinking websites</p>
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", opacity: 0.3, filter: "grayscale(100%)" }}>
+            {/* Fake logo placeholders, you can replace these with real clients later */}
+            <div style={{ fontWeight: 900, fontSize: 20 }}>TechCorp</div>
+            <div style={{ fontWeight: 900, fontSize: 20 }}>FajaedeSEO</div>
+            <div style={{ fontWeight: 900, fontSize: 20 }}>WebSecure</div>
+            <div style={{ fontWeight: 900, fontSize: 20 }}>DutchDesign</div>
+          </div>
+        </div>
+      )}
+
+
+      {/* RESULTAAT: SEO & GEO AUDIT (De Upsell naar de WP Plugin) */}
+      {result && (result.scanMode === "seo" || result.scanMode === "geo") && (
         <section
           style={{
+            position: "relative",
+            zIndex: 10,
             width: "100%",
             maxWidth: 720,
             marginTop: 8,
-            padding: 24,
+            padding: 32,
             borderRadius: 16,
             background: "#111",
-            border: "1px solid #333",
+            border: `1px solid ${result.scanMode === "seo" ? "#00ff99" : "#00aaff"}`,
+            boxShadow: `0 10px 40px ${result.scanMode === "seo" ? "rgba(0,255,153,0.1)" : "rgba(0,170,255,0.1)"}`,
             display: "flex",
             flexDirection: "column",
             gap: 24,
+            textAlign: "center"
           }}
         >
-          {/* NEW PSA BADGE */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              background: "linear-gradient(135deg, rgba(255,221,0,0.1), rgba(255,0,0,0.1))",
-              padding: "32px 24px",
-              borderRadius: "12px",
-              border: "1px solid rgba(255,221,0,0.3)",
-            }}
-          >
-            <div
-              style={{ fontSize: 24, fontWeight: 900, color: "#ffdd00", letterSpacing: 2 }}
-            >
-              {(result.trustScore ?? 0) >= 90 ? "PSA GOLD" : "PSA CERTIFIED"}
-            </div>
-            
-            <div style={{ fontSize: 56, fontWeight: 900, color: "#fff", margin: "16px 0" }}>
-              {result.trustScore || 84}<span style={{ fontSize: 24, color: "#888" }}>/100</span>
-            </div>
-            <div style={{ fontSize: 14, textTransform: "uppercase", color: "#aaa", letterSpacing: 1, marginBottom: 16 }}>
-              PSA Trust Rating
-            </div>
+          <h2 style={{ fontSize: 28, color: "#fff", margin: 0, fontWeight: 900 }}>
+            {result.scanMode === "seo" ? "SEO & Privacy Audit Report" : "GEO Local Audit Report"}
+          </h2>
+          <p style={{ color: "#aaa", margin: 0, fontSize: 16 }}>Geanalyseerd domein: <strong style={{ color: "#fff" }}>{result.url}</strong></p>
 
-            <div style={{ display: "flex", gap: "24px", fontSize: 16, color: "#ddd", marginBottom: "24px", fontWeight: 600 }}>
-              <span>Privacy {result.privacy?.score === "A" || Number(result.privacy?.score) >= 80 ? "✓" : "⚠️"}</span>
-              <span>Security {result.security?.score === "A" || Number(result.security?.score) >= 80 ? "✓" : "⚠️"}</span>
-              <span>Age {result.age?.score === "A" || Number(result.age?.score) >= 80 ? "✓" : "⚠️"}</span>
-            </div>
-
-            <div style={{ fontSize: 12, color: "#666", textTransform: "uppercase", letterSpacing: 1 }}>
-              Verified by fajaedeAI
+          {/* De Schokkende Score */}
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "32px 0" }}>
+            <div style={{ width: 140, height: 140, borderRadius: "50%", border: "4px solid #ff4d4f", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "rgba(255,0,0,0.05)", boxShadow: "0 0 30px rgba(255,0,0,0.2)" }}>
+                <span style={{ fontSize: 42, fontWeight: 900, color: "#ff4d4f" }}>{result.trustScore}</span>
+                <span style={{ fontSize: 14, color: "#aaa" }}>/ 100</span>
             </div>
           </div>
 
-        {/* Detailed Scores Breakdown */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          <ScoreBox
-            label="Privacy"
-            score={result.privacy?.score || "N/A"}
-            note={result.privacy?.note || "Geen data"}
-          />
-          <ScoreBox
-            label="Security"
-            score={result.security?.score || "N/A"}
-            note={result.security?.note || "Geen data"}
-          />
-          <ScoreBox
-            label="Age"
-            score={result.age?.score || "N/A"}
-            note={result.age?.note || "Geen data"}
-          />
-        </div>
+          {/* THE 3D GLOBE / GEO RADAR EFFECT (Alleen voor GEO Scans) */}
+          {result.scanMode === "geo" && (
+            <div style={{ position: "relative", width: "100%", height: 200, display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden", borderRadius: 12, background: "#020813", border: "1px solid #003366", marginBottom: 24, boxShadow: "inset 0 0 40px rgba(0,170,255,0.2)" }}>
+              {/* CSS Animated Grid/Radar for "AI Citation Platform" feel */}
+              <div style={{ position: "absolute", width: 400, height: 400, background: "conic-gradient(from 0deg, transparent 70%, rgba(0, 170, 255, 0.6) 100%)", borderRadius: "50%", animation: "spin 3s linear infinite" }}></div>
+              <div style={{ position: "absolute", width: "100%", height: "100%", background: "repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,170,255,0.15) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,170,255,0.15) 20px)" }}></div>
+              <div style={{ zIndex: 2, background: "rgba(0,0,0,0.8)", padding: "10px 24px", borderRadius: 999, border: "1px solid #00aaff", color: "#00aaff", fontSize: 15, fontWeight: 900, backdropFilter: "blur(4px)", textTransform: "uppercase", letterSpacing: 1, boxShadow: "0 0 20px rgba(0,170,255,0.4)" }}>
+                🌍 AI Global Citation Network Active
+              </div>
+              <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { 100% { transform: rotate(360deg); } }` }} />
+            </div>
+          )}
 
-          {/* Actionable Improvements & Lead Gen Funnel */}
-          <div
-            style={{
-              padding: 20,
-              background: "rgba(255,0,0,0.05)",
-              borderRadius: 12,
-              border: "1px solid rgba(255,0,0,0.2)",
-            }}
-          >
-            <h3 style={{ margin: "0 0 16px 0", fontSize: 18, color: "#ff4d4f" }}>
-              {(result.improvements || ["Add Cookie Consent", "Improve Security Headers", "Update Privacy Policy"]).length} improvements found:
+          {/* Pijnpunten / Issues benadrukken */}
+          <div style={{ background: "rgba(255,0,0,0.05)", border: "1px solid rgba(255,0,0,0.2)", borderRadius: 12, padding: 24, textAlign: "left" }}>
+            <h3 style={{ color: "#ff4d4f", margin: "0 0 16px 0", fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}>
+              <span>⚠️</span> Kritieke {result.scanMode === "seo" ? "Website & Privacy" : "Lokale"} Problemen Gevonden
             </h3>
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
-              {(result.improvements || ["Add Cookie Consent", "Improve Security Headers", "Update Privacy Policy"]).map((imp: string, i: number) => (
-                <li key={i} style={{ color: "#eee", fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: "#ff4d4f" }}>⚠️</span> {imp}
+              {result.criticalIssues?.map((issue, idx) => (
+                <li key={idx} style={{ color: "#eee", fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "#ff4d4f" }}>✖</span> {issue}
                 </li>
               ))}
             </ul>
-            
-            {/* Strategic Lead Gen Buttons */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 24 }}>
-              <button
-                onClick={() => alert("Opening PDF Report...")}
-                style={{
-                  flex: "1 1 auto",
-                  padding: "14px",
-                  background: "transparent",
-                  color: "#fff",
-                  border: "1px solid #555",
-                  borderRadius: 8,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontSize: 14,
-                }}
-              >
-                Download Report
-              </button>
-              <button
-                onClick={() => alert("Redirecting to FajaedeSEO AI+...")}
-                style={{
-                  flex: "1 1 auto",
-                  padding: "14px",
-                  background: "#ff0000",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontSize: 14,
-                }}
-              >
-                Fix with FajaedeSEO AI+
-              </button>
-              <button
-                onClick={() => alert("Opening PayPal checkout for €9/yr...")}
-                style={{
-                  flex: "1 1 100%",
-                  padding: "14px",
-                  background: "linear-gradient(135deg, #ffdd00, #d4af37)",
-                  color: "#111",
-                  border: "none",
-                  borderRadius: 8,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  fontSize: 15,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                }}
-              >
-                Get PSA Certified (€9/yr)
-              </button>
-            </div>
           </div>
 
-          {/* Embed Your Trust Badge (Shown conditionally if certified or high score) */}
-          <div
-              style={{
-              padding: 24,
-              background: "#1a1a1a",
-              borderRadius: 12,
-              border: "1px solid #333",
-              }}
-            >
-            <h3 style={{ margin: "0 0 8px 0", fontSize: 18, color: "#fff" }}>Display your PSA Trust Badge</h3>
-            <p style={{ color: "#aaa", fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>
-              Show visitors your site is safe. Use this embed code to place your un-copyable, domain-verified PSA badge on your website.
+          {/* DE OPLOSSING: Massive Call To Action naar de Download */}
+          <div style={{ background: "linear-gradient(135deg, #1a1a1a, #050505)", padding: 32, borderRadius: 12, border: "1px solid #333", marginTop: 8 }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>🤖</div>
+            <h3 style={{ color: "#fff", fontSize: 22, marginBottom: 12 }}>Fix alles met FajaedeSEO AI</h3>
+            <p style={{ color: "#aaa", fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
+              Verlies geen organisch verkeer meer door technische CMS- of privacyfouten in je website. Koppel jouw website aan onze Intelligence Layer en laat de AI alles automatisch optimaliseren.
             </p>
-            
-            <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
-              {/* Visual Preview of the actual badge URL you provided */}
-              <div style={{ width: 140, flexShrink: 0, pointerEvents: "none", userSelect: "none" }}>
-                <Image 
-                  src="/PSA-fajaede-AI.png" 
-                  alt="PSA Certified" 
-                  width={140}
-                  height={140}
-                  style={{ width: "100%", height: "auto", filter: "drop-shadow(0px 4px 12px rgba(0,0,0,0.5))" }} 
-                />
-              </div>
-
-              {/* Embed Snippet generator */}
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ 
-                  background: "#050505", 
-                  padding: 12, 
-                  borderRadius: 8, 
-                  fontFamily: "monospace", 
-                  fontSize: 12, 
-                  color: "#00ff99", 
-                  wordBreak: "break-all",
-                  border: "1px solid #222"
-                }}>
-                  {`<iframe src="https://fajaede.nl/embed/psa?url=${encodeURIComponent(result.url || 'yoursite.com')}" width="140" height="140" style="border:none; pointer-events:none;" scrolling="no"></iframe>`}
-                </div>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(`<iframe src="https://fajaede.nl/embed/psa?url=${encodeURIComponent(result.url || 'yoursite.com')}" width="140" height="140" style="border:none; pointer-events:none;" scrolling="no"></iframe>`);
-                    alert("Code copied!");
-                  }}
-                  style={{ 
-                    marginTop: 12, 
-                    padding: "8px 16px", 
-                    background: "#333", 
-                    color: "#fff", 
-                    border: "none", 
-                    borderRadius: 6, 
-                    cursor: "pointer", 
-                    fontSize: 13,
-                    fontWeight: 600
-                  }}
-                >
-                  Copy HTML Code
-                </button>
-              </div>
+            <a 
+              href="https://fajaede.nl/download.php" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style={{ display: "inline-block", width: "100%", padding: "18px 24px", background: result.scanMode === "seo" ? "#00ff99" : "#00aaff", color: "#000", fontWeight: 900, fontSize: 16, textTransform: "uppercase", letterSpacing: 1, borderRadius: 8, textDecoration: "none", boxShadow: `0 4px 20px ${result.scanMode === "seo" ? "rgba(0,255,153,0.3)" : "rgba(0,170,255,0.3)"}`, transition: "transform 0.2s" }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} 
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              Koppel met FajaedeSEO AI (Start Direct)
+            </a>
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, color: "#888", fontSize: 13, marginTop: 20, flexWrap: "wrap", fontWeight: 500 }}>
+              <span>✓ WordPress & Elementor</span>
+              <span>✓ Shopify & Wix</span>
+              <span>✓ Universele API</span>
             </div>
           </div>
+        </section>
+      )}
 
-          {/* Report link */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: 8,
-            }}
-          >
-            <a
-              href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                fontWeight: 600,
-                textDecoration: "none",
-                color: "#ffdd00",
-                fontSize: 14,
-                textDecorationLine: "underline"
-              }}
+
+      {/* RESULTAAT: ORIGINELE PSA SCAN CARD */}
+      {result && (!result.scanMode || result.scanMode === "psa") && (
+        <section
+          style={{
+            position: "relative",
+            zIndex: 10,
+            width: "100%",
+            maxWidth: 720,
+            marginTop: 8,
+            padding: 20,
+            borderRadius: 16,
+            background: "linear-gradient(135deg, rgba(255, 0, 0, 0.18), rgba(255, 221, 0, 0.16))",
+            border: "1px solid rgb(51, 51, 51)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: "radial-gradient(circle at 30% 0%, rgb(255, 221, 0), rgb(255, 0, 0) 60%, rgb(51, 0, 0) 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "rgb(17, 17, 17) 0px 0px 0px 2px, rgba(255, 0, 0, 0.7) 0px 0px 20px" }}>
+              <span style={{ fontWeight: 900, fontSize: 18, color: "rgb(255, 255, 255)", textShadow: "rgba(0, 0, 0, 0.7) 0px 1px 3px" }}>PSA</span>
+            </div>
+            <div>
+              <div style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "rgb(255, 221, 0)", marginBottom: 4 }}>PSA Certified by fajaedeAI</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>Scan result for {result.url}</div>
+              <div style={{ fontSize: 13, color: "rgb(221, 221, 221)" }}>Status: <strong style={{ color: "rgb(0, 255, 153)" }}>OK</strong></div>
+            </div>
+          </div>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0px, 1fr))", gap: 12, marginTop: 4 }}>
+            <ScoreBox label="Privacy" score={result.privacy?.score || "N/A"} note={result.privacy?.note || "Geen data"} />
+            <ScoreBox label="Security" score={result.security?.score || "N/A"} note={result.security?.note || "Geen data"} />
+            <ScoreBox label="Age" score={result.age?.score || "N/A"} note={result.age?.note || "Geen data"} />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 8, fontSize: 13 }}>
+            <span style={{ color: "rgb(238, 238, 238)" }}>View or share the full PSA report:</span>
+            <a 
+              href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`} 
+              target="_blank" 
+              rel="noreferrer" 
+              style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgb(255, 221, 0)", color: "rgb(17, 17, 17)", background: "rgb(255, 221, 0)", fontWeight: 600, textDecoration: "none" }}
             >
-              Open full PSA Report →
+              Open PSA report
             </a>
           </div>
         </section>
