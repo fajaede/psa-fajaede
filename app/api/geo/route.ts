@@ -29,31 +29,56 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // 1. LocalBusiness / Organization Schema Check (Cruciaal voor Citations)
     if (!lowerHtml.includes('localbusiness') && !lowerHtml.includes('organization')) {
-      score -= 30;
-      issues.push("Kritiek: Geen AI-leesbare 'LocalBusiness' of 'Organization' Schema.org markup gevonden.");
+      score -= 20;
+      issues.push("Kritiek: Geen 'LocalBusiness' of 'Organization' Schema.org markup gevonden. Zoekmachines begrijpen hierdoor je bedrijfsgegevens minder goed.");
     }
 
     // 2. Google Maps Embed of API Link
-    if (!lowerHtml.includes('maps.google.com') && !lowerHtml.includes('google.com/maps')) {
-      score -= 20;
-      issues.push("Geen Google Maps integratie of link gedetecteerd voor geo-spatial autoriteit.");
+    const mapsRegex = /(maps\.google\.com|google\.com\/maps|g\.page|maps\.app\.goo\.gl)/i;
+    if (!mapsRegex.test(lowerHtml)) {
+      score -= 15;
+      issues.push("Geen Google Maps integratie of (korte) link gedetecteerd. Dit is belangrijk voor je lokale vindbaarheid en autoriteit.");
     }
 
     // 3. Telefoonnummer / NAP check (Simpele check op tel: links)
-    if (!lowerHtml.includes('tel:')) {
+    if (!lowerHtml.includes('href="tel:')) {
       score -= 15;
-      issues.push("Geen klikbaar telefoonnummer gevonden. Dit verlaagt je NAP (Name, Address, Phone) score aanzienlijk.");
+      issues.push("Geen klikbaar telefoonnummer (tel: link) gevonden. Dit verlaagt je NAP (Name, Address, Phone) score en kost je mobiele conversies.");
     }
 
-    // 4. Laadsnelheid (Mobiel lokaal zoeken)
-    if (fetchTime > 1200) {
+    // 4. E-mailadres / NAP check
+    if (!lowerHtml.includes('href="mailto:')) {
+      score -= 5;
+      issues.push("Geen klikbaar e-mailadres (mailto: link) gevonden. Dit vermindert het contactgemak voor lokale klanten.");
+    }
+
+    // 5. Adres Tag Check (NAP)
+    if (!lowerHtml.includes('<address')) {
       score -= 10;
-      issues.push(`Trage server response (${fetchTime}ms). Lokale mobiele zoekers verlaten trage websites direct.`);
+      issues.push("Geen HTML <address> tag gevonden. Gebruik deze tag om je fysieke locatie semantisch aan te geven aan Google.");
+    }
+
+    // 6. Geo Meta Tags
+    if (!lowerHtml.includes('name="geo.region"') && !lowerHtml.includes('name="geo.placename"')) {
+      score -= 10;
+      issues.push("Geen specifieke GEO meta tags (geo.region of geo.placename) gevonden. Deze tags helpen enorm bij hyper-lokale zoekopdrachten.");
+    }
+
+    // 7. Review / Rating Schema
+    if (!lowerHtml.includes('aggregaterating') && !lowerHtml.includes('review')) {
+      score -= 10;
+      issues.push("Geen 'AggregateRating' of 'Review' schema gedetecteerd. Social proof is cruciaal voor Local SEO; zonder dit mis je de 'sterretjes' in de zoekresultaten.");
+    }
+
+    // 8. Laadsnelheid (Mobiel lokaal zoeken)
+    if (fetchTime > 1200) {
+      score -= 15;
+      issues.push(`Trage server response (${fetchTime}ms). Lokale mobiele zoekers (on-the-go) verlaten trage websites direct.`);
     }
 
     return NextResponse.json({
-      trustScore: Math.max(12, score),
-      criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je lokale basis staat goed!"],
+      trustScore: Math.max(12, score), // Zorg dat de score nooit onder de 12 zakt
+      criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je lokale SEO basis staat als een huis!"],
     });
   } catch (e: unknown) {
     console.error("GEO scan error:", e);
