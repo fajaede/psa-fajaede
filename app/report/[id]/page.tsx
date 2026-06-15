@@ -2,23 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import ReportClient from "./ReportClient";
 
-// Cache de pagina voor 1 jaar (31.536.000 seconden) 
-// Omdat de PSA-certificering 1 jaar geldig is!
-export const revalidate = 31536000;
-
-// Optioneel: Genereer alvast de statische pagina's voor de 10 meest recente 
-// rapporten tijdens de 'next build', voor onmiddellijke laadtijden.
-export async function generateStaticParams() {
-  const recentScans = await prisma.psaScan.findMany({
-    select: { urlHash: true },
-    take: 10,
-    orderBy: { createdAt: "desc" },
-  });
-
-  return recentScans.map((scan: { urlHash: string }) => ({
-    id: scan.urlHash,
-  }));
-}
+export const dynamic = "force-dynamic"; // Voorkomt database queries tijdens het Vercel bouwproces
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
