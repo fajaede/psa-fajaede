@@ -8,6 +8,7 @@ export default async function EmbedBadge({ searchParams }: { searchParams: Promi
   const url = params.url;
   let trustScore = 100;
   let isCertified = false;
+  let urlHash = "";
 
   if (url) {
     // Zoek de meest recente scan voor dit domein
@@ -22,6 +23,7 @@ export default async function EmbedBadge({ searchParams }: { searchParams: Promi
       if (report.ageScore?.includes("A3")) trustScore -= 10;
       // Check of deze klant daadwerkelijk de factuur betaald heeft
       isCertified = report.isPaid === true;
+      urlHash = report.urlHash;
     }
   }
 
@@ -61,26 +63,55 @@ export default async function EmbedBadge({ searchParams }: { searchParams: Promi
         justifyContent: "center",
         alignItems: "center",
         fontFamily: "system-ui, -apple-system, sans-serif",
-        background: isCertified ? "linear-gradient(135deg, #1a1a1a, #050505)" : "#330000",
+        background: isCertified ? "transparent" : "#330000",
         borderRadius: "16px",
-        border: isCertified ? (isGold ? "2px solid #ffdd00" : "1px solid #555") : "2px solid #ff4d4f",
-        boxShadow: isCertified ? "0 4px 12px rgba(0,0,0,0.5)" : "none",
+        border: isCertified ? "none" : "2px solid #ff4d4f",
+        boxShadow: "none",
         color: "#fff",
         textAlign: "center",
         userSelect: "none", // Maakt tekst niet selecteerbaar
+        overflow: "hidden",
       }}>
         {isCertified ? (
-           <>
-             <div style={{ fontSize: 13, fontWeight: 900, color: isGold ? "#ffdd00" : "#fff", letterSpacing: 1, textShadow: "0 2px 4px rgba(0,0,0,0.8)" }}>
-                {isGold ? "PSA GOLD" : "CERTIFIED"}
+           <a 
+             href={`/report/${urlHash}`} 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             title="Bekijk officieel PSA Certificaat"
+             style={{ position: "relative", width: "100%", height: "100%", display: "block", textDecoration: "none" }}
+           >
+             {/* eslint-disable-next-line @next/next/no-img-element */}
+             <img 
+               src={isGold ? "/fajaede-privacy-badge-gold.jpg" : "/fajaede-privacy-badge-silver.jpg"} 
+               alt={isGold ? "PSA Gold Badge" : "PSA Silver Badge"} 
+               draggable={false}
+               onContextMenu={(e) => e.preventDefault()}
+               style={{ width: "100%", height: "100%", objectFit: "contain" }} 
+             />
+             {/* Dynamische Score Overlay bovenop jouw afbeelding! */}
+             <div style={{ 
+               position: "absolute", 
+               top: "58%", /* Iets onder het midden voor het visuele zwaartepunt van een schild */
+               left: "50%", 
+               transform: "translate(-50%, -50%)", 
+               width: 48,
+               height: 48,
+               display: "flex",
+               justifyContent: "center",
+               alignItems: "center",
+               background: "linear-gradient(135deg, rgba(20,20,20,0.95), rgba(5,5,5,0.98))", /* Strak donker rondje */
+               border: isGold ? "2px solid rgba(255, 221, 0, 0.7)" : "2px solid rgba(200, 200, 200, 0.5)", /* Goud of zilver randje */
+               borderRadius: "50%",
+               boxShadow: "0 4px 12px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.15)", /* Prachtig 3D effect */
+               fontSize: 22, 
+               fontWeight: 900, 
+               color: isGold ? "#ffdd00" : "#ffffff", 
+               textShadow: "0 2px 4px rgba(0,0,0,0.8)",
+               letterSpacing: -0.5
+             }}>
+               {trustScore}
              </div>
-             <div style={{ fontSize: 36, fontWeight: 900, margin: "6px 0", textShadow: "0 2px 4px rgba(0,0,0,0.8)" }}>
-                {trustScore}<span style={{ fontSize: 14, color: "#888" }}>/100</span>
-             </div>
-             <div style={{ fontSize: 10, textTransform: "uppercase", color: "#aaa", letterSpacing: 0.5 }}>
-               fajaedeAI
-             </div>
-           </>
+           </a>
         ) : (
            <div style={{ padding: 12, fontSize: 12, fontWeight: 700, color: "#ffcccc" }}>
              UNVERIFIED DOMAIN

@@ -39,6 +39,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
   if (report.ageScore?.includes("A3")) { trustScore -= 10; improvements.push("Adult content flagged"); }
 
   const isGold = trustScore >= 90;
+  const isSilver = trustScore >= 75 && trustScore < 90;
   const embedCode = `<iframe src="https://fajaede.nl/embed/psa?url=${encodeURIComponent(report.url)}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
 
   return (
@@ -124,7 +125,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
           
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", background: "linear-gradient(135deg, rgba(255,221,0,0.1), rgba(255,0,0,0.1))", padding: "32px 24px", borderRadius: 12, border: "1px solid rgba(255,221,0,0.3)" }}>
             <div style={{ fontSize: 24, fontWeight: 900, color: "#ffdd00", letterSpacing: 2 }}>
-              {isGold ? "PSA GOLD" : "PSA CERTIFIED"}
+              {isGold ? "🏆 PSA GOLD" : isSilver ? "🥈 PSA SILVER" : "⚠️ UNVERIFIED"}
             </div>
             <div style={{ fontSize: 64, fontWeight: 900, color: "#fff", margin: "16px 0" }}>
               {trustScore}<span style={{ fontSize: 24, color: "#888" }}>/100</span>
@@ -226,20 +227,29 @@ export default function ReportClient({ report }: { report: ReportData }) {
               <p style={{ color: "#888", fontSize: 13, marginBottom: 16 }}>
                 Let op: Zonder actieve licentie toont de badge mogelijk &quot;Unverified&quot; aan je bezoekers.
               </p>
-              <form action="/api/checkout" method="GET" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-                <input type="hidden" name="urlHash" value={report.urlHash || ""} />
-                <div style={{ width: "100%", maxWidth: 320, textAlign: "left" }}>
-                  <label style={{ fontSize: 13, color: "#ccc", fontWeight: 600, display: "block", marginBottom: 8 }}>E-mailadres voor factuur & licentie:</label>
-                  <input 
-                    type="email" name="email" required placeholder="naam@bedrijf.nl" 
-                    value={email} onChange={e => setEmail(e.target.value)}
-                    style={{ width: "100%", boxSizing: "border-box", padding: "12px 16px", borderRadius: 8, border: "1px solid #444", background: "#050505", color: "#fff", outline: "none" }}
-                  />
+              
+              {/* DE GATEKEEPER LOGICA */}
+              {trustScore >= 75 ? (
+                <form action="/api/checkout" method="GET" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                  <input type="hidden" name="urlHash" value={report.urlHash || ""} />
+                  <div style={{ width: "100%", maxWidth: 320, textAlign: "left" }}>
+                    <label style={{ fontSize: 13, color: "#ccc", fontWeight: 600, display: "block", marginBottom: 8 }}>E-mailadres voor factuur & licentie:</label>
+                    <input 
+                      type="email" name="email" required placeholder="naam@bedrijf.nl" 
+                      value={email} onChange={e => setEmail(e.target.value)}
+                      style={{ width: "100%", boxSizing: "border-box", padding: "12px 16px", borderRadius: 8, border: "1px solid #444", background: "#050505", color: "#fff", outline: "none" }}
+                    />
+                  </div>
+                  <button type="submit" style={{ display: "inline-block", textDecoration: "none", padding: "14px 32px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
+                    Koop PSA Licentie (€9/jaar)
+                  </button>
+                </form>
+              ) : (
+                <div style={{ padding: "16px", background: "rgba(255, 77, 79, 0.1)", border: "1px solid rgba(255, 77, 79, 0.3)", borderRadius: 8, color: "#ffcccc", textAlign: "center" }}>
+                  <h4 style={{ color: "#ff4d4f", margin: "0 0 8px 0" }}>⚠️ Score te laag voor certificering</h4>
+                  <p style={{ margin: 0, fontSize: 14 }}>Jouw TrustScore is <strong>{trustScore}/100</strong>. Om de geloofwaardigheid van het keurmerk te bewaken, vereisen wij een minimale score van 75. Los eerst de kritieke fouten op (bijv. met FajaedeSEO AI) om de kassa te ontgrendelen.</p>
                 </div>
-                <button type="submit" style={{ display: "inline-block", textDecoration: "none", padding: "14px 32px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
-                  Koop PSA Licentie (€9/jaar)
-                </button>
-              </form>
+              )}
             </div>
           )}
         </div>
