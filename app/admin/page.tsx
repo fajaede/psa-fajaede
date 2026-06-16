@@ -63,6 +63,7 @@ export default async function AdminDashboard({
               <th style={{ padding: "16px 24px", color: "#888", fontWeight: 600 }}>Datum</th>
               <th style={{ padding: "16px 24px", color: "#888", fontWeight: 600 }}>Domein</th>
               <th style={{ padding: "16px 24px", color: "#888", fontWeight: 600 }}>Scores (P / S / A)</th>
+              <th style={{ padding: "16px 24px", color: "#888", fontWeight: 600 }}>E-mailadres</th>
               <th style={{ padding: "16px 24px", color: "#888", fontWeight: 600 }}>Acties</th>
             </tr>
           </thead>
@@ -79,6 +80,7 @@ export default async function AdminDashboard({
               securityScore: string | null;
               ageScore: string | null;
               isPaid: boolean;
+              email: string | null;
             }) => (
               <tr key={scan.urlHash} style={{ borderBottom: "1px solid #222" }}>
                 <td style={{ padding: "16px 24px", color: "#aaa" }}>
@@ -89,6 +91,15 @@ export default async function AdminDashboard({
                   <span style={{ display: "inline-block", width: 30, color: scan.privacyScore?.includes("P2") ? "#00ff00" : "#ff4d4f" }}>{scan.privacyScore?.split(" ")[0]}</span> / {" "}
                   <span style={{ display: "inline-block", width: 30, color: scan.securityScore?.includes("S2") ? "#00ff00" : "#ff4d4f", marginLeft: 8 }}>{scan.securityScore?.split(" ")[0]}</span> / {" "}
                   <span style={{ display: "inline-block", width: 30, color: scan.ageScore?.includes("A1") ? "#00ff00" : "#ff4d4f", marginLeft: 8 }}>{scan.ageScore?.split(" ")[0]}</span>
+                </td>
+                <td style={{ padding: "16px 24px", color: "#ccc" }}>
+                  {scan.email ? (
+                    <a href={`mailto:${scan.email}`} style={{ color: "#00aaff", textDecoration: "none" }}>
+                      {scan.email}
+                    </a>
+                  ) : (
+                    <span style={{ color: "#555", fontStyle: "italic" }}>Geen e-mail</span>
+                  )}
                 </td>
                 <td style={{ padding: "16px 24px" }}>
                   <form action={togglePaidStatus} style={{ display: "inline-block", marginRight: 12 }}>
