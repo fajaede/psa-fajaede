@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 type ReportData = {
@@ -9,6 +9,7 @@ type ReportData = {
   securityScore?: string | null;
   securityNote?: string | null;
   privacyScore?: string | null;
+  urlHash?: string;
   privacyNote?: string | null;
   ageScore?: string | null;
   ageNote?: string | null;
@@ -19,6 +20,14 @@ type ReportData = {
 export default function ReportClient({ report }: { report: ReportData }) {
   const [isCoreOpen, setIsCoreOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("payment=success")) {
+      // eslint-disable-next-line
+      setPaymentSuccess(true);
+    }
+  }, []);
 
   // Live berekening van de Trust Score aan de hand van de scores (P1/S1/A1)
   let trustScore = 100;
@@ -45,7 +54,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
       }}
     >
       {/* FajaedeAI Core Header (Exact overgenomen van de homepagina) */}
-      <header style={{ position: "relative", zIndex: 100, width: "100%", maxWidth: 1200, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 0 64px 0" }}>
+      <header style={{ position: "relative", zIndex: 100, width: "100%", maxWidth: 1200, display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "space-between", alignItems: "center", padding: "24px 0 64px 0" }}>
         <Link href="/" style={{ textDecoration: "none" }}>
           <div style={{ fontWeight: 900, fontSize: 24, color: "#fff", letterSpacing: -1, cursor: "pointer" }}>
             fajaede<span style={{ color: "#ffdd00" }}>AI</span>
@@ -63,9 +72,9 @@ export default function ReportClient({ report }: { report: ReportData }) {
             </span>
             {isCoreOpen && (
               <div style={{
-                position: "absolute", top: "100%", left: "50%", transform: "translateX(-35%)",
+                position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
                 background: "rgba(10, 10, 10, 0.95)", border: "1px solid #333", borderRadius: 16, padding: "24px",
-                width: 820, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px",
+                width: "90vw", maxWidth: 820, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px",
                 boxShadow: "0 20px 40px rgba(0,0,0,0.8)", zIndex: 50, backdropFilter: "blur(10px)"
               }}>
                 <div>
@@ -123,8 +132,8 @@ export default function ReportClient({ report }: { report: ReportData }) {
               PSA Trust Rating
             </div>
             <div style={{ fontSize: 12, color: "#777", display: "flex", gap: 16 }}>
-              <span>Scanned on: {new Date(report.createdAt).toLocaleDateString()}</span>
-              <span>Valid until: {report.expiresAt ? new Date(report.expiresAt).toLocaleDateString() : "N/A"}</span>
+              <span>Scanned on: {new Date(report.createdAt).toLocaleDateString("nl-NL")}</span>
+              <span>Valid until: {report.expiresAt ? new Date(report.expiresAt).toLocaleDateString("nl-NL") : "N/A"}</span>
             </div>
           </div>
 
@@ -188,6 +197,12 @@ export default function ReportClient({ report }: { report: ReportData }) {
             </button>
           </div>
 
+          {paymentSuccess && (
+            <div style={{ background: "rgba(0, 255, 153, 0.1)", border: "1px solid #00ff99", color: "#00ff99", padding: "16px", borderRadius: 8, marginBottom: 24, fontWeight: "bold", fontSize: 15 }}>
+              🎉 Betaling ontvangen! Je licentie wordt verwerkt. Het kan een minuutje duren voordat de badge op je website updatet.
+            </div>
+          )}
+
           {report.isPaid ? (
             <p style={{ color: "#00ff00", fontSize: 14, marginBottom: 16, fontWeight: "bold" }}>
               ✅ Actieve licentie: Jouw Trust Badge is geverifieerd en live!
@@ -197,7 +212,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
               <p style={{ color: "#888", fontSize: 13, marginBottom: 16 }}>
                 Let op: Zonder actieve licentie toont de badge mogelijk &quot;Unverified&quot; aan je bezoekers.
               </p>
-              <a href="https://www.fajaede.nl/afrekenen" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", textDecoration: "none", padding: "12px 24px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
+              <a href={`/api/checkout?urlHash=${report.urlHash || ""}`} style={{ display: "inline-block", textDecoration: "none", padding: "12px 24px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
                 Koop PSA Licentie (€9/jaar)
               </a>
             </>

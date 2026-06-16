@@ -49,9 +49,15 @@ export default function Home() {
     setError("");
     setResult(null);
 
-    // simpele URL-check
-    if (!url || !url.startsWith("http")) {
-      setError("Please enter a valid URL starting with http or https.");
+    // Slimme URL-check (voegt automatisch https:// toe als de gebruiker het vergeet)
+    let scanUrl = url.trim();
+    if (scanUrl && !scanUrl.startsWith("http")) {
+      scanUrl = "https://" + scanUrl;
+      setUrl(scanUrl); // Update het invoerveld voor de gebruiker
+    }
+
+    if (!scanUrl || !scanUrl.startsWith("http")) {
+      setError("Please enter a valid URL.");
       return;
     }
 
@@ -65,7 +71,7 @@ export default function Home() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: scanUrl }),
       });
 
       if (!res.ok) {
@@ -79,7 +85,7 @@ export default function Home() {
 
       const data = await res.json();
       // Koppel de gekozen scanMode aan het resultaat
-      setResult({ ...data, scanMode, url });
+      setResult({ ...data, scanMode, url: scanUrl });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -121,6 +127,8 @@ export default function Home() {
         width: "100%", 
         maxWidth: 1200, 
         display: "flex", 
+        flexWrap: "wrap",
+        gap: "16px",
         justifyContent: "space-between", 
         alignItems: "center", 
         padding: "24px 0 64px 0" 
@@ -144,9 +152,9 @@ export default function Home() {
             {/* Dropdown Menu */}
             {isCoreOpen && (
               <div style={{
-                position: "absolute", top: "100%", left: "50%", transform: "translateX(-35%)",
+                position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
                 background: "rgba(10, 10, 10, 0.95)", border: "1px solid #333", borderRadius: 16, padding: "24px",
-                width: 820, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px",
+                width: "90vw", maxWidth: 820, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px",
                 boxShadow: "0 20px 40px rgba(0,0,0,0.8)", zIndex: 50, backdropFilter: "blur(10px)"
               }}>
                 <div>

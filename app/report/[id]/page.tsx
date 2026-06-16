@@ -29,13 +29,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   if (report.privacyScore?.includes("P1")) trustScore -= 20;
   if (report.ageScore?.includes("A3")) trustScore -= 10;
 
-  let benchmark = { total: 100709, percentile: 82 }; // Standaard fallback
+  const benchmark = { total: 100709, percentile: 82 }; // Standaard fallback
   try {
     // 1. Vraag het totale aantal websites in jouw Meilisearch database
     const statsRes = await fetch("http://116.203.39.166:7700/indexes/pages/stats", {
       headers: { "Authorization": "Bearer Fajaede_Secure_Meili_Key_928374!" },
       next: { revalidate: 3600 } // Vercel mag dit 1 uur onthouden voor snelheid
-    });
+    } as RequestInit & { next?: { revalidate: number } });
     
     if (statsRes.ok) {
       const stats = await statsRes.json();
@@ -63,7 +63,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       else if (trustScore >= 60) benchmark.percentile = 45;
       else benchmark.percentile = 12;
     }
-  } catch (e) {} // Negeer fouten, fallback wordt gebruikt
+  } catch {} // Negeer fouten, fallback wordt gebruikt
 
   // Zet dates om naar strings voor de client component
   const safeReport = {
