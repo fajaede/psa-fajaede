@@ -443,11 +443,21 @@ export default function Home() {
           )}
 
           {/* De Schokkende Score */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "32px 0" }}>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "32px 0", gap: 24 }}>
             <div style={{ width: 140, height: 140, borderRadius: "50%", border: "4px solid #ff4d4f", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "rgba(255,0,0,0.05)", boxShadow: "0 0 30px rgba(255,0,0,0.2)" }}>
                 <span style={{ fontSize: 42, fontWeight: 900, color: "#ff4d4f" }}>{result.trustScore}</span>
                 <span style={{ fontSize: 14, color: "#aaa" }}>/ 100</span>
             </div>
+            
+            {/* PDF Download Knop (Koppeling naar je Hetzner API) */}
+            <button 
+              onClick={() => window.open(`http://116.203.39.166:18000/api/pdf?url=${encodeURIComponent(result.url || "")}`, "_blank")}
+              style={{ background: "#222", color: "#fff", border: "1px solid #444", padding: "10px 20px", borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", gap: 8, transition: "background 0.2s" }}
+              onMouseOver={(e) => e.currentTarget.style.background = "#333"}
+              onMouseOut={(e) => e.currentTarget.style.background = "#222"}
+            >
+              📄 Download Rapport als PDF
+            </button>
           </div>
 
           {/* THE 3D GLOBE / GEO RADAR EFFECT (Alleen voor GEO Scans) */}
@@ -540,15 +550,23 @@ export default function Home() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 8, fontSize: 13 }}>
-            <span style={{ color: "rgb(238, 238, 238)" }}>View or share the full PSA report:</span>
-            <a 
-              href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgb(255, 221, 0)", color: "rgb(17, 17, 17)", background: "rgb(255, 221, 0)", fontWeight: 600, textDecoration: "none" }}
-            >
-              Open PSA report
-            </a>
+            <span style={{ color: "rgb(238, 238, 238)" }}>View, share or download the full PSA report:</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button 
+                onClick={() => window.open(`http://116.203.39.166:18000/api/pdf?url=${encodeURIComponent(result.reportUrl || "")}`, "_blank")}
+                style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid #555", color: "#fff", background: "#222", fontWeight: 600, cursor: "pointer" }}
+              >
+                📄 Download PDF
+              </button>
+              <a 
+                href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgb(255, 221, 0)", color: "rgb(17, 17, 17)", background: "rgb(255, 221, 0)", fontWeight: 600, textDecoration: "none" }}
+              >
+                Open PSA report
+              </a>
+            </div>
           </div>
         </section>
       )}

@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unused-vars */
-const { MeiliSearch } = require('meilisearch');
+const { Meilisearch } = require('meilisearch');
 const fs = require('fs');
 
 // Koppel hier jouw eigen Hetzner VPS
-const client = new MeiliSearch({
+const client = new Meilisearch({
   host: 'http://116.203.39.166:7700', 
-  apiKey: 'JOUW_MOEILIJKE_WACHTWOORD', // De MEILI_MASTER_KEY uit stap 2
+  apiKey: 'Fajaede_Secure_Meili_Key_928374!', 
 });
 
 async function runImport() {
