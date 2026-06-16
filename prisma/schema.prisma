@@ -19,6 +19,7 @@ model PsaScan {
   ageNote         String?
   hasSchema       Boolean  @default(false)
   hasCookieBanner Boolean  @default(false)
+  email           String?
   isPaid          Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

@@ -5,8 +5,10 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const urlHash = searchParams.get("urlHash");
+  const email = searchParams.get("email");
 
   if (!urlHash) return NextResponse.json({ error: "Missing urlHash" }, { status: 400 });
+  if (!email) return NextResponse.json({ error: "Missing email address" }, { status: 400 });
 
   if (!process.env.MOLLIE_API_KEY) {
     return NextResponse.json({ error: "Mollie API key missing in environment variables" }, { status: 500 });
@@ -17,6 +19,9 @@ export async function GET(request: NextRequest) {
   try {
     const report = await prisma.psaScan.findUnique({ where: { urlHash } });
     if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
+
+    // Sla het e-mailadres van de klant op in de database!
+    await prisma.psaScan.update({ where: { urlHash }, data: { email } });
 
     // Maak de betaling aan
     const payment = await mollieClient.payments.create({

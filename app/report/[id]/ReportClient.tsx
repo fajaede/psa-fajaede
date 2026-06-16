@@ -21,6 +21,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
   const [isCoreOpen, setIsCoreOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("payment=success")) {
@@ -181,20 +182,33 @@ export default function ReportClient({ report }: { report: ReportData }) {
             Kopieer de onderstaande HTML-code en plak deze in de footer of sidebar van jouw website.
           </p>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#000", border: "1px solid #444", padding: "12px 16px", borderRadius: 8, marginBottom: 24, textAlign: "left", overflowX: "auto" }}>
-            <code style={{ color: "#0f0", fontSize: 14, whiteSpace: "nowrap", flex: 1 }}>
-              {embedCode}
-            </code>
+          <div style={{ position: "relative", background: "#000", border: "1px solid #444", padding: "54px 20px 20px 20px", borderRadius: 8, marginBottom: 32, textAlign: "left" }}>
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(embedCode);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              style={{ background: copied ? "#00a300" : "#333", color: "#fff", border: "1px solid #555", padding: "10px 20px", borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 14, transition: "background 0.2s", whiteSpace: "nowrap" }}
+              title="Kopieer Code"
+              style={{ position: "absolute", top: 12, right: 12, background: copied ? "#00a300" : "#222", color: "#fff", border: "1px solid #444", padding: "8px 12px", borderRadius: 6, cursor: "pointer", fontWeight: "600", fontSize: 13, transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}
+              onMouseOver={(e) => { if (!copied) e.currentTarget.style.background = "#333"; }}
+              onMouseOut={(e) => { if (!copied) e.currentTarget.style.background = "#222"; }}
             >
-              {copied ? "Gekopieerd!" : "Kopieer Code"}
+              {copied ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Gekopieerd!
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  Kopieer
+                </>
+              )}
             </button>
+            <code style={{ color: "#0f0", fontSize: 14, wordBreak: "break-all" }}>
+              {embedCode}
+            </code>
           </div>
 
           {paymentSuccess && (
@@ -203,19 +217,30 @@ export default function ReportClient({ report }: { report: ReportData }) {
             </div>
           )}
 
-          {report.isPaid ? (
+          {report.isPaid || paymentSuccess ? (
             <p style={{ color: "#00ff00", fontSize: 14, marginBottom: 16, fontWeight: "bold" }}>
               ✅ Actieve licentie: Jouw Trust Badge is geverifieerd en live!
             </p>
           ) : (
-            <>
+            <div style={{ background: "rgba(255,255,255,0.02)", padding: 24, borderRadius: 12, border: "1px solid #222" }}>
               <p style={{ color: "#888", fontSize: 13, marginBottom: 16 }}>
                 Let op: Zonder actieve licentie toont de badge mogelijk &quot;Unverified&quot; aan je bezoekers.
               </p>
-              <a href={`/api/checkout?urlHash=${report.urlHash || ""}`} style={{ display: "inline-block", textDecoration: "none", padding: "12px 24px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
-                Koop PSA Licentie (€9/jaar)
-              </a>
-            </>
+              <form action="/api/checkout" method="GET" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                <input type="hidden" name="urlHash" value={report.urlHash || ""} />
+                <div style={{ width: "100%", maxWidth: 320, textAlign: "left" }}>
+                  <label style={{ fontSize: 13, color: "#ccc", fontWeight: 600, display: "block", marginBottom: 8 }}>E-mailadres voor factuur & licentie:</label>
+                  <input 
+                    type="email" name="email" required placeholder="naam@bedrijf.nl" 
+                    value={email} onChange={e => setEmail(e.target.value)}
+                    style={{ width: "100%", boxSizing: "border-box", padding: "12px 16px", borderRadius: 8, border: "1px solid #444", background: "#050505", color: "#fff", outline: "none" }}
+                  />
+                </div>
+                <button type="submit" style={{ display: "inline-block", textDecoration: "none", padding: "14px 32px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
+                  Koop PSA Licentie (€9/jaar)
+                </button>
+              </form>
+            </div>
           )}
         </div>
 
