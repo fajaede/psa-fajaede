@@ -5,10 +5,10 @@ import ReportClient from "./ReportClient";
 export const dynamic = "force-dynamic"; // Voorkomt database queries tijdens het Vercel bouwproces
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  // id is the urlHash
+  const { id } = await params;
+  
   const report = await prisma.psaScan.findUnique({
-    where: { urlHash: resolvedParams.id }
+    where: { urlHash: id }
   });
 
   if (!report) {
@@ -57,7 +57,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       const worseCount = searchData.estimatedTotalHits || searchData.totalHits || 0;
       benchmark.percentile = Math.max(1, Math.round((worseCount / benchmark.total) * 100));
     } else {
-      // Subtiele fallback als 'trust_score' toevallig nog niet filterbaar is in de crawler instellingen
       if (trustScore === 100) benchmark.percentile = 92;
       else if (trustScore >= 80) benchmark.percentile = 74;
       else if (trustScore >= 60) benchmark.percentile = 45;

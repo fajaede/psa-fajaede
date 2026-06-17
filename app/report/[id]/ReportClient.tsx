@@ -40,7 +40,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
 
   const isGold = trustScore >= 90;
   const isSilver = trustScore >= 75 && trustScore < 90;
-  const embedCode = `<iframe src="https://fajaede.nl/embed/psa?url=${encodeURIComponent(report.url)}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
+  const embedCode = `<iframe src="https://psa-fajaede.vercel.app/embed/psa?url=${encodeURIComponent(report.url)}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
 
   return (
     <main

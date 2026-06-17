@@ -160,11 +160,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.error("PSA scan error:", e);
     
     const isTimeout = e instanceof Error && (e.name === "TimeoutError" || e.message.includes("timeout"));
-    const friendlyError = isTimeout ? "Scan timeout: De website reageert te traag (> 8.5s). Probeer het later nog eens." : "De scan is mislukt door een onverwachte server fout.";
+    const isNotFound = e instanceof Error && (e.message.includes("ENOTFOUND") || e.message.includes("getaddrinfo") || e.message.includes("fetch failed"));
+
+    let friendlyError = "De scan is mislukt door een onverwachte server fout.";
+    let statusCode = 500;
+
+    if (isTimeout) {
+      friendlyError = "Scan timeout: De website reageert te traag (> 8.5s). Probeer het later nog eens.";
+      statusCode = 504;
+    } else if (isNotFound) {
+      friendlyError = "Kan de website niet bereiken. Controleer of er geen typfout in de URL staat.";
+      statusCode = 400;
+    }
 
     return NextResponse.json(
       { error: friendlyError },
-      { status: isTimeout ? 504 : 500 }
+      { status: statusCode }
     );
   }
 }
