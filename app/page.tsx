@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type ScanResult = {
   trustScore?: number;
@@ -17,6 +18,7 @@ type ScanResult = {
 };
 
 export default function Home() {
+  const router = useRouter();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,6 +28,10 @@ export default function Home() {
 
   // Terminal Scan Animatie States
   const [loadingStep, setLoadingStep] = useState(0);
+
+  const handlePremiumUpgrade = () => {
+    router.push('/price');
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -103,13 +109,14 @@ export default function Home() {
         minHeight: "100vh",
         margin: 0,
         fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        background: "#050505",
+        background: "linear-gradient(135deg, #0d0d0d, #1a1a2e)",
         color: "#f5f5f5",
         position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         padding: "0 16px 40px 16px",
+        transition: "background 0.8s ease"
       }}
     >
       {/* Subtiele Rode Gloed op de achtergrond */}
@@ -188,8 +195,8 @@ export default function Home() {
             )}
           </div>
           
-          <a href="#" style={{ color: "#ccc", textDecoration: "none", fontWeight: 500 }}>Pricing</a>
-          <a href="#" style={{ color: "#ccc", textDecoration: "none", fontWeight: 500 }}>Agency</a>
+<a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' , ':hover': { color: '#00ff99' } }}>Pricing</a>
+        <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' , ':hover': { color: '#00ff99' } }}>Agency</a>
         </nav>
         
         <div>
@@ -416,9 +423,10 @@ export default function Home() {
               <p style={{ color: "#ccc", margin: "0 0 16px 0", fontSize: 14, lineHeight: 1.5 }}>
                 Dit is een eerder gegenereerde scan van <strong>{new Date(result.cachedAt!).toLocaleString("nl-NL")}</strong>. Heb je zojuist aanpassingen gedaan aan je website en wil je een nieuwe, live re-crawl uitvoeren om te zien of je fouten zijn opgelost?
               </p>
-              <button 
+              <button
                 style={{ background: "#ffdd00", color: "#000", border: "none", padding: "12px 20px", borderRadius: 8, fontWeight: 800, cursor: "pointer", fontSize: 14, transition: "transform 0.2s" }}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} 
+                onClick={handlePremiumUpgrade}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
                 Upgrade naar Premium voor Live Re-crawls 🚀
@@ -525,14 +533,16 @@ export default function Home() {
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 8, fontSize: 13 }}>
             <span style={{ color: "rgb(238, 238, 238)" }}>View or share the full PSA report:</span>
-            <a 
-              href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`} 
-              target="_blank" 
-              rel="noreferrer" 
-              style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgb(255, 221, 0)", color: "rgb(17, 17, 17)", background: "rgb(255, 221, 0)", fontWeight: 600, textDecoration: "none" }}
-            >
-              Open PSA report
-            </a>
+            { (result.reportUrl || result.url) && (
+              <a
+                href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgb(255, 221, 0)", color: "rgb(17, 17, 17)", background: "rgb(255, 221, 0)", fontWeight: 600, textDecoration: "none" }}
+              >
+                Open PSA report
+              </a>
+            )}
           </div>
         </section>
       )}
