@@ -27,11 +27,10 @@ body {
     transform: none !important;
     width: 90vw !important;
   }
-  .searchBtn {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 0 0 8px !important;
     background: #00aaff;
     border-radius: 999px;
     flex-shrink: 0;
@@ -39,11 +38,25 @@ body {
     justify-content: center;
     overflow: hidden;
     box-sizing: border-box;
+    margin-left: 8px;
   }
-  .searchBtn span {
-    display: none;
+  .searchBtn span { display: none; }
+  .searchWrapper { overflow: hidden; flex-wrap: wrap; }
+  .searchForm input {
+    padding-right: 48px !important;
+    font-size: 14px;
   }
-  .searchWrapper {
-    overflow: hidden;
+  .searchForm button {
+    margin-top: 8px;
+  }
+  /* Card responsiveness */
+  .cardContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .cardContainer > section {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
