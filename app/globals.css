@@ -74,3 +74,8 @@ body {
     max-width: 100% !important;
   }
 }
+
+/* Added responsive fixes */
+html, body { overflow-x: hidden; }
+main { overflow-x: hidden; }
+.searchForm { width: 100%; box-sizing: border-box; }
