@@ -277,7 +277,7 @@ export default function Home() {
           onFocus={(e) => e.target.style.borderColor = '#ff0000'}
           onBlur={(e) => e.target.style.borderColor = '#444'}
         />
-        <button
+        <button className="searchBtn"
           type="submit"
           disabled={loading}
           style={{
