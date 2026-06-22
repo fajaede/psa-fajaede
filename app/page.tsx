@@ -244,64 +244,41 @@ export default function Home() {
       </section>
 
       {/* Search form */}
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          position: "relative",
-          zIndex: 10,
-          width: "100%",
-          maxWidth: 720,
-          display: "flex",
-          gap: 8,
-          marginBottom: 24,
-          boxShadow: "0 10px 40px rgba(255,0,0,0.1)",
-        }}
-      >
-        <input
-          type="url"
-          placeholder="https://jouwwebsite.nl"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "18px 24px",
-            borderRadius: 999,
-            border: "1px solid #444",
-            background: "rgba(10,10,10,0.8)",
-            backdropFilter: "blur(10px)",
-            color: "#f5f5f5",
-            fontSize: 16,
-            outline: "none",
-            transition: "border 0.2s",
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#ff0000'}
-          onBlur={(e) => e.target.style.borderColor = '#444'}
-        />
-        <button className="searchBtn"
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: "18px 36px",
-            borderRadius: 999,
-            border: "none",
-            background: loading ? "#555" : scanMode === "psa" ? "#ff0000" : scanMode === "seo" ? "#00ff99" : "#00aaff",
-            color: scanMode === "seo" && !loading ? "#000" : "#fff",
-            fontWeight: 800,
-            cursor: loading ? "default" : "pointer",
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            fontSize: 15,
-            whiteSpace: "nowrap",
-            transition: "all 0.3s",
-            boxShadow: loading ? "none" : 
-              scanMode === "psa" ? "0 4px 15px rgba(255,0,0,0.3)" : 
-              scanMode === "seo" ? "0 4px 15px rgba(0,255,153,0.3)" : 
-              "0 4px 15px rgba(0,170,255,0.3)",
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 20l-5.6-5.6a7 7 0 10-1.4 1.4L20 21zM10 16a6 6 0 110-12 6 6 0 010 12z"/></svg>
+      <form onSubmit={handleSubmit} className="searchForm" style={{
+        position: "relative",
+        zIndex: 10,
+        width: "100%",
+        maxWidth: 720,
+        marginBottom: 24,
+        boxShadow: "0 10px 40px rgba(255,0,0,0.1)"
+      }}>
+        <div className="searchWrapper" style={{ position: "relative", display: "flex", alignItems: "center", flex: 1 }}>
+          <input
+            type="url"
+            placeholder="https://jouwwebsite.nl"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "18px 24px",
+              paddingRight: "56px",
+              borderRadius: 999,
+              border: "1px solid #444",
+              background: "rgba(10,10,10,0.8)",
+              backdropFilter: "blur(10px)",
+              color: "#f5f5f5",
+              fontSize: 16,
+              outline: "none",
+              transition: "border 0.2s",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "#ff0000")}
+            onBlur={(e) => (e.target.style.borderColor = "#444")}
+          />
+          <button className="searchBtn" type="submit" disabled={loading}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 20l-5.6-5.6a7 7 0 10-1.4 1.4L20 21zM10 16a6 6 0 110-12 6 6 0 010 12z"/></svg>
             <span>{loading ? "Scanning..." : `Scan ${scanMode.toUpperCase()}`}</span>
-        </button>
+          </button>
+        </div>
       </form>
 
       {/* De Live Terminal Animatie */}
