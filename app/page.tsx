@@ -151,7 +151,7 @@ export default function Home() {
             
             {/* Dropdown Menu */}
             {isCoreOpen && (
-              <div style={{
+              <div className="coreDropdown" style={{
                 position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
                 background: "rgba(10, 10, 10, 0.95)", border: "1px solid #333", borderRadius: 16, padding: "24px",
                 width: "90vw", maxWidth: 820, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px",
@@ -159,7 +159,7 @@ export default function Home() {
               }}>
                 <div>
                   <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Intelligence Engines</h4>
-                  <DropdownItem icon="🧠" title="AI & Search Engine" />
+                  <DropdownItem icon="🧠" title="AI & Search Engine" href="https://fajaede-search-frontend.vercel.app" target="_blank" rel="noopener noreferrer" />
                   <DropdownItem icon="🔍" title="SEO & Audit Engine" />
                   <DropdownItem icon="📊" title="SERP Intelligence" />
                   <DropdownItem icon="🛡️" title="PSA Certification" color="#ffdd00" />
@@ -299,7 +299,8 @@ export default function Home() {
               "0 4px 15px rgba(0,170,255,0.3)",
           }}
         >
-          {loading ? "Scanning..." : `Scan ${scanMode.toUpperCase()}`}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 20l-5.6-5.6a7 7 0 10-1.4 1.4L20 21zM10 16a6 6 0 110-12 6 6 0 010 12z"/></svg>
+            <span>{loading ? "Scanning..." : `Scan ${scanMode.toUpperCase()}`}</span>
         </button>
       </form>
 

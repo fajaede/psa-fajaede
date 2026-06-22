@@ -19,3 +19,25 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+@media (max-width: 640px) {
+  .coreDropdown {
+    margin: 0 1rem !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    width: 90vw !important;
+  }
+  .searchBtn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: #00aaff;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .searchBtn span {
+    display: none;
+  }
+}
