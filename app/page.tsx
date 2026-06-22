@@ -86,6 +86,10 @@ export default function Home() {
       const data = await res.json();
       // Koppel de gekozen scanMode aan het resultaat
       setResult({ ...data, scanMode, url: scanUrl });
+      // Persist result for the results page
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('lastResult', JSON.stringify({ ...data, scanMode, url: scanUrl }));
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -231,15 +235,9 @@ export default function Home() {
 
         {/* Multi-Tool Tab Switcher */}
         <div style={{ display: "inline-flex", gap: 8, background: "rgba(255,255,255,0.05)", padding: 6, borderRadius: 999, marginBottom: 16, position: "relative", zIndex: 10, border: "1px solid #333", backdropFilter: "blur(10px)" }}>
-          <button onClick={() => setScanMode("psa")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "psa" ? "#ff0000" : "transparent", color: scanMode === "psa" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
-            🛡️ PSA Trust
-          </button>
-          <button onClick={() => setScanMode("seo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "seo" ? "#00ff99" : "transparent", color: scanMode === "seo" ? "#000" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
-            📈 SEO Audit
-          </button>
-          <button onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
-            🌍 GEO Local
-          </button>
+            <button className="tabBtn" onClick={() => setScanMode("psa")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "psa" ? "#ff0000" : "transparent", color: scanMode === "psa" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}><span>🛡️ PSA Trust</span></button>
+            <button className="tabBtn" onClick={() => setScanMode("seo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "seo" ? "#00ff99" : "transparent", color: scanMode === "seo" ? "#000" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}><span>📈 SEO Audit</span></button>
+            <button className="tabBtn" onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}><span>🌍 GEO Local</span></button>
         </div>
       </section>
 

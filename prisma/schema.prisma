@@ -32,6 +32,7 @@ model SeoScan {
   url            String   @unique
   trustScore     Int
   criticalIssues String[]
+  checks         Json @default("[]")
   isPaid         Boolean  @default(false)
   createdAt      DateTime @default(now())
 }
@@ -41,6 +42,7 @@ model GeoScan {
   url            String   @unique
   trustScore     Int
   criticalIssues String[]
+  checks         Json @default("[]")
   isPaid         Boolean  @default(false)
   createdAt      DateTime @default(now())
 }

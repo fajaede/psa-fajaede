@@ -75,6 +75,16 @@ body {
   }
 }
 
+/* Result check card styles */
+.checkPass { background: rgba(0,255,153,0.1); border-left: 4px solid #00ff99; padding: 12px; margin: 8px 0; border-radius: 8px; }
+.checkFail { background: rgba(255,77,77,0.1); border-left: 4px solid #ff4d4f; padding: 12px; margin: 8px 0; border-radius: 8px; }
+
+/* Tab button responsive: hide text on mobile, show SVG only */
+@media (max-width: 640px) {
+  .tabBtn span { display: none; }
+  .tabBtn svg { width: 20px; height: 20px; }
+}
+
 /* Added responsive fixes */
 html, body { overflow-x: hidden; }
 main { overflow-x: hidden; }

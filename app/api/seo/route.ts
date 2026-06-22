@@ -159,24 +159,78 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       issues.push("De HTML tag heeft geen 'lang' (taal) attribuut. Dit helpt zoekmachines te bepalen in welke taal je content is geschreven.");
     }
 
+    const checks = [];
+
+    // Core Web Vitals placeholder (using fetch time as proxy)
+    checks.push({ name: 'Load Time', passed: fetchTime <= 1200, score: Math.max(0, 100 - (fetchTime - 1200)), message: `Fetch time: ${fetchTime}ms` });
+
+    // robots.txt check
+    try {
+      const robotsRes = await fetch(`${url.replace(/\/[^/]*$/, '')}/robots.txt`);
+      if (robotsRes.ok) {
+        checks.push({ name: 'robots.txt exists', passed: true, score: 100, message: 'Found robots.txt' });
+      } else {
+        checks.push({ name: 'robots.txt exists', passed: false, score: 0, message: 'Missing robots.txt' });
+      }
+    } catch (e) {
+      checks.push({ name: 'robots.txt exists', passed: false, score: 0, message: 'Error checking robots.txt' });
+    }
+
+    // sitemap.xml check
+    try {
+      const sitemapRes = await fetch(`${url.replace(/\/[^/]*$/, '')}/sitemap.xml`);
+      if (sitemapRes.ok) {
+        checks.push({ name: 'sitemap.xml exists', passed: true, score: 100, message: 'Found sitemap.xml' });
+      } else {
+        checks.push({ name: 'sitemap.xml exists', passed: false, score: 0, message: 'Missing sitemap.xml' });
+      }
+    } catch (e) {
+      checks.push({ name: 'sitemap.xml exists', passed: false, score: 0, message: 'Error checking sitemap.xml' });
+    }
+
+    // hreflang tag check
+    const hasHreflang = lowerHtml.includes('hreflang=');
+    checks.push({ name: 'hreflang tags', passed: hasHreflang, score: hasHreflang ? 100 : 0, message: hasHreflang ? 'Found hreflang tags' : 'Missing hreflang tags' });
+
+    // duplicate content naive check (same title occurrence)
+    const titleOccurrences = (html.match(/<title[^>]*>/gi) || []).length;
+    checks.push({ name: 'Duplicate title tags', passed: titleOccurrences <= 1, score: titleOccurrences <= 1 ? 100 : 0, message: `${titleOccurrences} title tags found` });
+
+    // broken links check (simple regex for href)
+    const linkHrefs = html.match(/href\s*=\s*"([^\"]*)"/gi) || [];
+    let brokenCount = 0;
+    for (const link of linkHrefs) {
+      const urlMatch = link.match(/href\s*=\s*"([^\"]*)"/i);
+      if (urlMatch && urlMatch[1]) {
+        const linkUrl = urlMatch[1];
+        if (!linkUrl.startsWith('http')) continue; // ignore relative
+        try {
+          const resLink = await fetch(linkUrl, { method: 'HEAD', timeout: 3000 });
+          if (!resLink.ok) brokenCount++;
+        } catch (e) {
+          brokenCount++;
+        }
+      }
+    }
+    checks.push({ name: 'Broken links', passed: brokenCount === 0, score: brokenCount === 0 ? 100 : Math.max(0, 100 - brokenCount * 5), message: `${brokenCount} broken links detected` });
+
+    // keyword density placeholder (check for word "privacy")
+    const keyword = 'privacy';
+    const keywordCount = (lowerHtml.match(new RegExp(keyword, 'g')) || []).length;
+    checks.push({ name: 'Keyword "privacy" density', passed: keywordCount >= 2, score: Math.min(100, keywordCount * 10), message: `${keywordCount} occurrences of "${keyword}"` });
+
+    // Build response data including checks
     const responseData = {
-      trustScore: Math.max(12, score), // Zorg dat de score nooit onder de 12 zakt
+      trustScore: Math.max(12, score),
       criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je SEO basis staat goed!"],
+      checks,
     };
 
-    // 3. Sla het resultaat permanent op in de database
+    // Persist with checks
     await prisma.seoScan.upsert({
       where: { url: cleanUrl },
-      update: {
-        trustScore: responseData.trustScore,
-        criticalIssues: responseData.criticalIssues,
-        createdAt: new Date(),
-      },
-      create: {
-        url: cleanUrl,
-        trustScore: responseData.trustScore,
-        criticalIssues: responseData.criticalIssues,
-      }
+      update: { trustScore: responseData.trustScore, criticalIssues: responseData.criticalIssues, checks: responseData.checks, createdAt: new Date() },
+      create: { url: cleanUrl, trustScore: responseData.trustScore, criticalIssues: responseData.criticalIssues, checks: responseData.checks },
     });
 
     return NextResponse.json(responseData);
