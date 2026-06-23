@@ -1,4 +1,3 @@
-// app/results/ResultsClient.tsx
 "use client";
 
 import { ScoreBadge } from '@/components/ScoreBadge';
