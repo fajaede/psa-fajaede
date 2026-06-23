@@ -4,13 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && (prisma db push --skip-generate || echo 'Database push skipped') && next build",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push --force-reset --accept-data-loss",
+    "build": "npm run prisma:generate && npm run prisma:push && next build",
     "start": "next start"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
     "@mollie/api-client": "^3.7.0",
+    "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/adapter-pg": "^6.0.0",
-    "@prisma/client": "^6.0.0",
+    "@prisma/client": "^7.8.0",
     "@types/pg": "^8.20.0",
     "expo": "^56.0.12",
     "meilisearch": "^0.58.0",
@@ -28,7 +32,7 @@
     "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
-    "prisma": "^6.0.0",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^6.0.3"
   }
