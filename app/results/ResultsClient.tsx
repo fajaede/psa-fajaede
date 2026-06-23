@@ -1,7 +1,7 @@
 "use client";
 
-import { ScoreBadge } from '../../components/ScoreBadge';
-import { copyToClipboard } from '../../lib/clipboard';
+import { ScoreBadge } from '../../components/ScoreBadge.tsx';
+import { copyToClipboard } from '../../lib/clipboard.ts';
 import { useEffect, useState } from 'react';
 
 interface CheckResult {
