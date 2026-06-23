@@ -59,3 +59,10 @@ model PremiumOrder {
   priceCents  Int
   createdAt   DateTime @default(now())
 }
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  type      String
+  payload   Json
+}
