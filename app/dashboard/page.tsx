@@ -3,6 +3,8 @@ import { isOwner } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import React from 'react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage({ searchParams }: { searchParams: { email?: string } }) {
   const email = searchParams.email ?? '';
   const authorized = isOwner(email);
