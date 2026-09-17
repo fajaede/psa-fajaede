@@ -1,0 +1,5 @@
+{
+  "buildCommand": "prisma generate --schema=./prisma/schema.prisma && (prisma db push --schema=./prisma/schema.prisma || echo 'Database push skipped') && next build",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+}

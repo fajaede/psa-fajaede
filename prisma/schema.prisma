@@ -1,0 +1,69 @@
+
+
+
+datasource db {
+  provider = "sqlite"
+}
+generator client {
+  provider = "prisma-client-js"
+}
+model PsaScan {
+  id              Int      @id @default(autoincrement())
+  url             String   @unique
+  urlHash         String   @unique
+  pageTitle       String?
+  privacyScore    String?
+  privacyNote     String?
+  securityScore   String?
+  securityNote    String?
+  ageScore        String?
+  ageNote         String?
+  hasSchema       Boolean  @default(false)
+  hasCookieBanner Boolean  @default(false)
+  email           String?
+  isPaid          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  expiresAt       DateTime?
+}
+
+
+model SeoScan {
+  id             String   @id @default(cuid())
+  url            String   @unique
+  trustScore     Int
+  criticalIssues Json @default("[]")
+  checks         Json @default("[]")
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model GeoScan {
+  id             String   @id @default(cuid())
+  url            String   @unique
+  trustScore     Int
+  criticalIssues Json @default("[]")
+  checks         Json @default("[]")
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+enum Tier {
+  RE_SCAN
+  RE_SCAN_ADV
+}
+
+model PremiumOrder {
+  id          String @id @default(cuid())
+  email       String
+  tier        Tier
+  paymentId   String
+  priceCents  Int
+  createdAt   DateTime @default(now())
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  type      String
+  payload   Json
+}
