@@ -13,9 +13,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const cleanUrl = url.toLowerCase().replace(/\/$/, "");
 
     // 1. Check de Prisma Database Cache (Permanent bewaard, tot na de betaling)
-    const cachedScan = await prisma.geoScan.findUnique({
-      where: { url: cleanUrl }
-    });
+    let cachedScan = null;
+    try {
+      cachedScan = await prisma.geoScan.findUnique({
+        where: { url: cleanUrl }
+      });
+    } catch (error) {
+      console.warn("GEO cache unavailable; continuing with a live scan:", error);
+    }
 
     if (cachedScan) {
       return NextResponse.json({
@@ -114,19 +119,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     // 3. Sla het resultaat permanent op in de database
-    await prisma.geoScan.upsert({
-      where: { url: cleanUrl },
-      update: {
-        trustScore: responseData.trustScore,
-        criticalIssues: responseData.criticalIssues,
-        createdAt: new Date(),
-      },
-      create: {
-        url: cleanUrl,
-        trustScore: responseData.trustScore,
-        criticalIssues: responseData.criticalIssues,
-      }
-    });
+    try {
+      await prisma.geoScan.upsert({
+        where: { url: cleanUrl },
+        update: {
+          trustScore: responseData.trustScore,
+          criticalIssues: responseData.criticalIssues,
+          createdAt: new Date(),
+        },
+        create: {
+          url: cleanUrl,
+          trustScore: responseData.trustScore,
+          criticalIssues: responseData.criticalIssues,
+        }
+      });
+    } catch (error) {
+      console.warn("GEO result could not be cached:", error);
+    }
 
     return NextResponse.json(responseData);
   } catch (e: unknown) {

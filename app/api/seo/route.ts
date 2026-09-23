@@ -13,9 +13,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const cleanUrl = url.toLowerCase().replace(/\/$/, "");
 
     // 1. Check de Prisma Database Cache (Permanent bewaard, tot na de betaling)
-    const cachedScan = await prisma.seoScan.findUnique({
-      where: { url: cleanUrl }
-    });
+    let cachedScan = null;
+    try {
+      cachedScan = await prisma.seoScan.findUnique({
+        where: { url: cleanUrl }
+      });
+    } catch (error) {
+      console.warn("SEO cache unavailable; continuing with a live scan:", error);
+    }
 
     if (cachedScan) {
       return NextResponse.json({
@@ -227,11 +232,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     // Persist with checks
-    await prisma.seoScan.upsert({
-      where: { url: cleanUrl },
-      update: { trustScore: responseData.trustScore, criticalIssues: responseData.criticalIssues, checks: responseData.checks, createdAt: new Date() },
-      create: { url: cleanUrl, trustScore: responseData.trustScore, criticalIssues: responseData.criticalIssues, checks: responseData.checks },
-    });
+    try {
+      await prisma.seoScan.upsert({
+        where: { url: cleanUrl },
+        update: { trustScore: responseData.trustScore, criticalIssues: responseData.criticalIssues, checks: responseData.checks, createdAt: new Date() },
+        create: { url: cleanUrl, trustScore: responseData.trustScore, criticalIssues: responseData.criticalIssues, checks: responseData.checks },
+      });
+    } catch (error) {
+      console.warn("SEO result could not be cached:", error);
+    }
 
     return NextResponse.json(responseData);
   } catch (e: unknown) {
