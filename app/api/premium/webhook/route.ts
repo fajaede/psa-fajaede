@@ -1,69 +1,64 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/**
- * Mollie webhook endpoint.
- * Handles GET health‑check and POST events.
- */
+const mollieApiKey = () => process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
 
-// ---------------------------------------------------------------------
-// GET – simple health‑check (useful for Mollie’s “Test webhook” button)
 export async function GET() {
   return NextResponse.json({ status: "ok" });
 }
 
-// ---------------------------------------------------------------------
-// List of Mollie event types we care about (snapshot‑only)
-const ALLOWED_EVENT_TYPES = [
-  "balance.transaction",
-  "payouts",
-  "payment.links",
-  "sales.invoices",
-];
-
-// ---------------------------------------------------------------------
-// POST – store full payload for allowed types and update order/payment status
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    const payload = await req.json();
-    const eventType = payload?.type as string | undefined;
+    const contentType = request.headers.get("content-type") || "";
+    let paymentId: string | null = null;
 
-    // Store snapshot if the event type is allowed
-    if (eventType && ALLOWED_EVENT_TYPES.includes(eventType)) {
-      await prisma.webhookEvent.create({
-        data: {
-          type: eventType,
-          payload: payload as any,
-        },
-      });
+    if (contentType.includes("application/json")) {
+      const payload = await request.json();
+      paymentId = typeof payload?.id === "string" ? payload.id : null;
+    } else {
+      const formData = await request.formData();
+      const id = formData.get("id");
+      paymentId = typeof id === "string" ? id : null;
     }
 
-    // Extract common fields (Mollie ID, status, optional orderId)
-    const { id: mollieId, status, metadata } = payload as {
-      id: string;
-      status: string;
-      metadata?: { orderId?: string };
-    };
-    const orderId = metadata?.orderId;
-
-    // Update (or create) payment record
-    if (mollieId) {
-      await prisma.payment.upsert({
-        where: { mollieId },
-        update: { status },
-        create: { mollieId, status },
-      });
+    if (!paymentId) {
+      return NextResponse.json({ error: "Missing Mollie payment id" }, { status: 400 });
     }
 
-    // If we have an orderId, mark the premium order as paid
-    if (orderId) {
+    const apiKey = mollieApiKey();
+    if (!apiKey) {
+      return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
+    }
+
+    // Mollie webhooks contain only the payment id. Fetch the official status server-side.
+    const mollieResponse = await fetch(`https://api.mollie.com/v2/payments/${encodeURIComponent(paymentId)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      cache: "no-store",
+    });
+    if (!mollieResponse.ok) {
+      throw new Error(`Mollie status lookup failed: ${mollieResponse.status}`);
+    }
+
+    const payment = await mollieResponse.json();
+    const status = typeof payment?.status === "string" ? payment.status : "unknown";
+    const orderId = payment?.metadata?.orderId;
+
+    await prisma.webhookEvent.create({
+      data: { type: "payment.updated", payload: payment },
+    });
+
+    if (typeof orderId === "string") {
       await prisma.premiumOrder.update({
         where: { id: orderId },
-        data: { status, paymentId: mollieId },
+        data: { paymentId, status },
+      });
+    } else {
+      await prisma.premiumOrder.updateMany({
+        where: { paymentId },
+        data: { status },
       });
     }
 
-    // Mollie expects a 2xx response
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Mollie webhook error:", error);

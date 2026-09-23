@@ -7,6 +7,7 @@ export default function SuccessPage() {
   const router = useRouter();
   const [orderId, setOrderId] = useState<string | null>(null);
   const [free, setFree] = useState<string | null>(null);
+  const [status, setStatus] = useState("pending");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -15,6 +16,20 @@ export default function SuccessPage() {
       const fr = params.get("free");
       setOrderId(oid);
       setFree(fr);
+      if (!oid) return;
+
+      let attempts = 0;
+      const checkStatus = async () => {
+        const response = await fetch(`/api/premium/status?orderId=${encodeURIComponent(oid)}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        setStatus(data.status || "pending");
+        attempts += 1;
+        if (data.status !== "paid" && attempts < 10) {
+          window.setTimeout(checkStatus, 3000);
+        }
+      };
+      void checkStatus();
     }
   }, []);
 
@@ -25,8 +40,10 @@ export default function SuccessPage() {
       <h1 style={styles.title}>Bedankt voor uw aankoop!</h1>
       {free ? (
         <p style={styles.paragraph}>U heeft een gratis scan uitgevoerd.</p>
+      ) : status === "paid" ? (
+        <p style={styles.paragraph}>Uw premium bestelling is betaald en verwerkt.</p>
       ) : (
-        <p style={styles.paragraph}>Uw premium bestelling (ID: {orderId}) is succesvol verwerkt.</p>
+        <p style={styles.paragraph}>Uw betaling wordt gecontroleerd. Deze pagina wordt automatisch bijgewerkt.</p>
       )}
       <button onClick={goHome} style={styles.button}>Terug naar home</button>
     </main>

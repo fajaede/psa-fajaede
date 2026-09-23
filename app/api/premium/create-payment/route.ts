@@ -18,29 +18,27 @@ export async function POST(request: Request) {
   try {
     const { tier, email } = await request.json();
     const price = getPrice(tier);
-    if (price === null) {
-      // No payment needed (e.g., FREE tier) – just return a dummy URL
-      return NextResponse.json({ checkoutUrl: "/premium/success?free=1" });
+    if (price === null || typeof email !== "string" || !email.trim()) {
+      return NextResponse.json({ error: "A valid premium tier and email address are required" }, { status: 400 });
     }
 
     // Create a pending order in the DB (price in cents)
     const order = await prisma.premiumOrder.create({
       data: {
-        email: email ?? "",
+        email: email.trim(),
         tier,
         paymentId: "pending",
         priceCents: Math.round(price * 100),
       },
     });
 
-    // Mollie payment request
-     const mollieKey = process.env.MOLLIE_TEST_KEY || "test_5dxfedaARztkwUEw3hEheQhFr47Brb";
-     if (!mollieKey) {
-       console.error("Mollie API key missing in environment variables");
-       return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
-     }
+    const mollieKey = process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
+    if (!mollieKey) {
+      return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
+    }
 
-     const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "https://fajaede.nl").replace(/\/$/, "");
+    const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
        method: "POST",
        headers: {
          Authorization: `Bearer ${mollieKey}`,
@@ -48,9 +46,9 @@ export async function POST(request: Request) {
        },
        body: JSON.stringify({
         amount: { currency: "EUR", value: price.toFixed(2) },
-        description: `${tier} SEO re‑scan for ${email || "anonymous"}`,
-        redirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL || "https://psa-fajaede.vercel.app"}/premium/success?orderId=${order.id}`,
-        webhookUrl: `${process.env.NEXT_PUBLIC_BASE_URL || "https://psa-fajaede.vercel.app"}/api/premium/webhook`,
+        description: `${tier} SEO re-scan for ${email.trim()}`,
+        redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
+        webhookUrl: `${baseUrl}/api/premium/webhook`,
         metadata: { orderId: order.id },
       }),
     });
@@ -59,7 +57,12 @@ export async function POST(request: Request) {
       const err = await mollieRes.text();
       throw new Error(`Mollie error: ${err}`);
     }
-    const { checkoutUrl, id: paymentId } = await mollieRes.json();
+    const payment = await mollieRes.json();
+    const checkoutUrl = payment?._links?.checkout?.href;
+    const paymentId = payment?.id;
+    if (!checkoutUrl || !paymentId) {
+      throw new Error("Mollie response did not contain a checkout URL or payment id");
+    }
 
     // Update order with actual Mollie payment id
     await prisma.premiumOrder.update({

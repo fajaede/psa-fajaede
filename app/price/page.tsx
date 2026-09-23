@@ -30,14 +30,19 @@ const tiers = [
 export default function PricePage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
 
   const handleUpgrade = async (tierKey: string) => {
+    if (!email.trim()) {
+      alert("Vul eerst uw e-mailadres in.");
+      return;
+    }
     setLoading(tierKey);
     try {
       const res = await fetch("/api/premium/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tierKey }),
+        body: JSON.stringify({ tier: tierKey, email: email.trim() }),
       });
       if (!res.ok) throw new Error("Payment creation failed");
       const { checkoutUrl } = await res.json();
@@ -53,6 +58,17 @@ export default function PricePage() {
   return (
     <main style={styles.container}>
       <h1 style={styles.title}>Kies jouw SEO‑her‑scan</h1>
+      <label style={styles.emailLabel}>
+        E-mailadres voor de bestelling
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="naam@bedrijf.nl"
+          style={styles.emailInput}
+        />
+      </label>
       <section style={styles.grid}>
         {tiers.map((t) => (
           <div key={t.tierKey} style={styles.card}>
@@ -85,6 +101,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
   },
   title: { fontSize: 32, marginBottom: 24 },
+  emailLabel: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, color: "#ccc" },
+  emailInput: { boxSizing: "border-box", width: "100%", padding: "12px 14px", border: "1px solid #555", borderRadius: 8, background: "#111", color: "#fff", fontSize: 16 },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",

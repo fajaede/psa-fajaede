@@ -58,6 +58,7 @@ model PremiumOrder {
   tier        Tier
   paymentId   String
   priceCents  Int
+  status      String @default("pending")
   createdAt   DateTime @default(now())
 }
 
