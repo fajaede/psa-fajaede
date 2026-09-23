@@ -10,11 +10,12 @@ export async function GET(request: NextRequest) {
   if (!urlHash) return NextResponse.json({ error: "Missing urlHash" }, { status: 400 });
   if (!email) return NextResponse.json({ error: "Missing email address" }, { status: 400 });
 
-  if (!process.env.MOLLIE_API_KEY) {
+  const mollieApiKey = process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
+  if (!mollieApiKey) {
     return NextResponse.json({ error: "Mollie API key missing in environment variables" }, { status: 500 });
   }
 
-  const mollieClient = createMollieClient({ apiKey: process.env.MOLLIE_API_KEY });
+  const mollieClient = createMollieClient({ apiKey: mollieApiKey });
 
   try {
     const report = await prisma.psaScan.findUnique({ where: { urlHash } });
@@ -30,8 +31,8 @@ export async function GET(request: NextRequest) {
         currency: "EUR",
       },
       description: `FajaedeAI PSA Licentie - ${report.url}`,
-      redirectUrl: `${origin}/report/${urlHash}?payment=success`, // Hier komen ze terug na de iDeal/Creditcard betaling
-      webhookUrl: `${origin}/api/webhook/mollie`, // Mollie roept dit onzichtbaar aan!
+      redirectUrl: `${origin}/report/${urlHash}?payment=success`,
+      webhookUrl: process.env.MOLLIE_WEBHOOK_URL || "https://fajaede.nl/wp-json/fajaedeseo/v1/webhook/mollie",
       metadata: { urlHash },
     });
 

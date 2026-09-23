@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 
 type ReportData = {
@@ -20,15 +20,7 @@ type ReportData = {
 export default function ReportClient({ report }: { report: ReportData }) {
   const [isCoreOpen, setIsCoreOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search.includes("payment=success")) {
-      // eslint-disable-next-line
-      setPaymentSuccess(true);
-    }
-  }, []);
 
   // Live berekening van de Trust Score aan de hand van de scores (P1/S1/A1)
   let trustScore = 100;
@@ -212,13 +204,13 @@ export default function ReportClient({ report }: { report: ReportData }) {
             </code>
           </div>
 
-          {paymentSuccess && (
+          {typeof window !== "undefined" && window.location.search.includes("payment=success") && !report.isPaid && (
             <div style={{ background: "rgba(0, 255, 153, 0.1)", border: "1px solid #00ff99", color: "#00ff99", padding: "16px", borderRadius: 8, marginBottom: 24, fontWeight: "bold", fontSize: 15 }}>
-              🎉 Betaling ontvangen! Je licentie wordt verwerkt. Het kan een minuutje duren voordat de badge op je website updatet.
+              Betaling ontvangen. De licentie wordt gecontroleerd; ververs deze pagina zo meteen.
             </div>
           )}
 
-          {report.isPaid || paymentSuccess ? (
+          {report.isPaid ? (
             <p style={{ color: "#00ff00", fontSize: 14, marginBottom: 16, fontWeight: "bold" }}>
               ✅ Actieve licentie: Jouw Trust Badge is geverifieerd en live!
             </p>
