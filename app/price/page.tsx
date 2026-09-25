@@ -57,6 +57,7 @@ export default function PricePage() {
 
   return (
     <main style={styles.container}>
+      <div style={styles.checkoutBadge}>Fajaede Secure Checkout</div>
       <h1 style={styles.title}>Kies jouw SEO‑her‑scan</h1>
       <label style={styles.emailLabel}>
         E-mailadres voor de bestelling
@@ -101,6 +102,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
   },
   title: { fontSize: 32, marginBottom: 24 },
+  checkoutBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "6px 12px",
+    borderRadius: 999,
+    background: "rgba(0,255,153,0.1)",
+    border: "1px solid rgba(0,255,153,0.3)",
+    color: "#00ff99",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
   emailLabel: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, color: "#ccc" },
   emailInput: { boxSizing: "border-box", width: "100%", padding: "12px 14px", border: "1px solid #555", borderRadius: 8, background: "#111", color: "#fff", fontSize: 16 },
   grid: {

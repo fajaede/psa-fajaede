@@ -1,7 +1,7 @@
 "use client";
 
-import { ScoreBadge } from '../../components/ScoreBadge.tsx';
-import { copyToClipboard } from '../../lib/clipboard.ts';
+import { ScoreBadge } from '../../components/ScoreBadge';
+import { copyToClipboard } from '../../lib/clipboard';
 import { useEffect, useState } from 'react';
 
 interface CheckResult {
@@ -76,7 +76,19 @@ export default function ResultsClient() {
         <h2 style={styles.subTitle}>Audit Checks</h2>
         <div style={styles.checksGrid}>
           {checks?.map((c, i) => (
-            <div key={i} className={c.passed ? 'checkPass' : 'checkFail'} style={styles.checkCard}>
+            <div
+              key={i}
+              className={c.passed ? 'checkPass' : 'checkFail'}
+              style={styles.checkCard}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
               <h3 style={styles.checkName}>{c.name}</h3>
               <p style={styles.checkMessage}>{c.message ?? ''}</p>
             </div>
@@ -173,10 +185,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 8,
     background: 'rgba(255,255,255,0.05)',
     transition: 'transform 0.2s, box-shadow 0.2s',
-    ':hover': {
-      transform: 'scale(1.02)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    },
   },
   checkName: {
     fontSize: 16,

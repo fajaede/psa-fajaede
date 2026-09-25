@@ -76,5 +76,5 @@ const styles: Record<string, React.CSSProperties> = {
   table: { width: '100%', borderCollapse: 'collapse' },
   th: { borderBottom: '1px solid #444', padding: '0.5rem', textAlign: 'left' },
   td: { borderBottom: '1px solid #333', padding: '0.5rem' },
-  tr: { ':hover': { background: 'rgba(255,255,255,0.05)' } },
+  tr: { background: 'transparent' },
 };

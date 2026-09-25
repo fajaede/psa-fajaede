@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildReportPath, buildVerifyPath, generateReportId, normalizeReportId } from "@/lib/report-id";
+import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    const retryAfter = checkScanRateLimit(request);
+    if (retryAfter !== null) {
+      return NextResponse.json({ error: "Te veel scans aangevraagd. Probeer het later opnieuw." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+    }
+
     const body = await request.json();
     const url = body?.url as string | undefined;
 
@@ -12,6 +19,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 }
       );
     }
+
+    const urlError = await validatePublicScanUrl(url);
+    if (urlError) return NextResponse.json({ error: urlError }, { status: 400 });
 
     const resp = await fetch(url, {
       method: "GET",
@@ -112,7 +122,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ageNote = "Let op: Enkele risicewoorden gedetecteerd, vereist mogelijk handmatige controle.";
     }
 
-    const urlHash = Buffer.from(url).toString("base64url");
+    const existing = await prisma.psaScan.findUnique({ where: { url } }).catch(() => null);
+    let urlHash = existing?.urlHash ?? normalizeReportId(generateReportId());
+
+    while (!existing && (await prisma.psaScan.findUnique({ where: { urlHash } }).catch(() => null))) {
+      urlHash = normalizeReportId(generateReportId());
+    }
 
     // Calculate expiry: 1 year from now
     const expiresAt = new Date();
@@ -122,6 +137,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await prisma.psaScan.upsert({
       where: { url },
       update: {
+        urlHash,
         pageTitle: title,
         privacyScore,
         privacyNote,
@@ -152,7 +168,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       privacy: { score: privacyScore, note: privacyNote },
       security: { score: securityScore, note: securityNote },
       age: { score: ageScore, note: ageNote },
-      reportUrl: `/report/${urlHash}`,
+      reportUrl: buildReportPath(urlHash),
+      verifyUrl: buildVerifyPath(urlHash),
       expiresAt: expiresAt.toISOString(),
       fromCache: false,
     });

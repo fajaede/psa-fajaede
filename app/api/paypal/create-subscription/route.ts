@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { buildReportPath, normalizeReportId } from "@/lib/report-id";
 
 const PAYPAL_MODE = process.env.PAYPAL_MODE || "sandbox"; // sandbox or live
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
@@ -83,8 +84,9 @@ export async function GET(req: NextRequest) {
     const plan = await planRes.json();
 
     // Create subscription for buyer to approve
-    const returnUrl = `${req.nextUrl.origin}/report/${Buffer.from(url).toString("base64url")}`;
-    const cancelUrl = `${req.nextUrl.origin}/report/${Buffer.from(url).toString("base64url")}`;
+    const normalizedUrlHash = normalizeReportId(Buffer.from(url).toString("base64url"));
+    const returnUrl = `${req.nextUrl.origin}${buildReportPath(normalizedUrlHash)}`;
+    const cancelUrl = `${req.nextUrl.origin}${buildReportPath(normalizedUrlHash)}`;
 
     const subRes = await fetch(`${paypalBase()}/v1/billing/subscriptions`, {
       method: "POST",

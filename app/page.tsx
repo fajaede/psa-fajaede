@@ -25,9 +25,17 @@ export default function Home() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isCoreOpen, setIsCoreOpen] = useState(false);
   const [scanMode, setScanMode] = useState<"psa" | "seo" | "geo">("psa");
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   // Terminal Scan Animatie States
   const [loadingStep, setLoadingStep] = useState(0);
+
+  useEffect(() => {
+    const checkScreen = () => setIsSmallScreen(window.innerWidth < 640);
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
 
   const handlePremiumUpgrade = () => {
     router.push('/price');
@@ -145,7 +153,7 @@ export default function Home() {
         padding: "24px 0 64px 0" 
       }}>
         <div style={{ fontWeight: 900, fontSize: 24, color: "#fff", letterSpacing: -1, cursor: "pointer" }}>
-          fajaede<span style={{ color: "#ffdd00" }}>AI</span>
+          <span style={{ color: "#fff" }}>FajaedeAI</span><span style={{ color: "#ffdd00" }}> Core</span>
         </div>
         
         <nav style={{ display: "flex", gap: 32, alignItems: "center" }}>
@@ -195,8 +203,8 @@ export default function Home() {
             )}
           </div>
           
-<a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' , ':hover': { color: '#00ff99' } }}>Pricing</a>
-        <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' , ':hover': { color: '#00ff99' } }}>Agency</a>
+<a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Pricing</a>
+        <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Agency</a>
         </nav>
         
         <div>
@@ -220,22 +228,14 @@ export default function Home() {
             letterSpacing: 1,
           }}
         >
-          <span style={{ color: "#ffdd00", fontWeight: "bold" }}>FajaedeAI</span>
-          <span style={{ color: "#999", fontWeight: 500 }}>The Ultimate Intelligence Layer</span>
+          <span style={{ color: "#ffdd00", fontWeight: "bold" }}>FajaedeAI Core</span>
+          <span style={{ color: "#999", fontWeight: 500 }}>Digital Trust Intelligence</span>
         </div>
         <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 900, marginTop: 24, marginBottom: 16, lineHeight: 1.1, letterSpacing: -1 }}>
-          The Intelligence Layer <br/>
-          for <span style={{ 
-            color: scanMode === "psa" ? "#ff0000" : scanMode === "seo" ? "#00ff99" : "#00aaff",
-            transition: "color 0.3s"
-          }}>
-            {scanMode === "psa" && "Digital Trust"}
-            {scanMode === "seo" && "Search Dominance"}
-            {scanMode === "geo" && "Local Visibility"}
-          </span>
+          Is your website <span style={{ color: "#ffdd00" }}>ready to be trusted?</span>
         </h1>
-        <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#aaa", marginBottom: 32, maxWidth: 640, margin: "0 auto 32px auto", lineHeight: 1.5 }}>
-          {scanMode === "psa" && "De alles-in-één scan voor Privacy, Security & Age compliance. Scan jouw website gratis en ontdek of je in aanmerking komt voor het onkopieerbare PSA Certificaat."}
+        <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#aaa", marginBottom: 32, maxWidth: 700, margin: "0 auto 32px auto", lineHeight: 1.5 }}>
+          {scanMode === "psa" && "FajaedeAI Core analyzes your website across privacy, security, age compliance, SEO and AI visibility — and turns the results into measurable trust signals."}
           {scanMode === "seo" && "De ultieme SEO Audit Engine voor FajaedeSEO AI klanten. Analyseer direct on-page factoren, backlinks en technische pijnpunten."}
           {scanMode === "geo" && "Domineer jouw lokale markt. Check live je Google Maps posities en lokale autoriteit voor specifieke zoekwoorden en regio's."}
         </p>
@@ -281,7 +281,7 @@ export default function Home() {
           />
           <button className="searchBtn" type="submit" disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 20l-5.6-5.6a7 7 0 10-1.4 1.4L20 21zM10 16a6 6 0 110-12 6 6 0 010 12z"/></svg>
-            <span>{loading ? "Scanning..." : `Scan ${scanMode.toUpperCase()}`}</span>
+            <span>{loading ? "Scanning..." : scanMode === "psa" ? "Run free scan" : `Scan ${scanMode.toUpperCase()}`}</span>
           </button>
         </div>
       </form>
@@ -340,7 +340,7 @@ export default function Home() {
         <div style={{ position: "relative", zIndex: 10, marginTop: 4, display: "flex", alignItems: "center", gap: 10, background: "rgba(0, 255, 153, 0.05)", border: "1px solid rgba(0, 255, 153, 0.2)", padding: "8px 20px", borderRadius: 999, color: "#00ff99", fontSize: 13, fontWeight: 600, letterSpacing: 0.5 }}>
           {/* De oplichtende neon-stip */}
           <span style={{ display: "inline-block", width: 8, height: 8, background: "#00ff99", borderRadius: "50%", boxShadow: "0 0 10px #00ff99" }}></span>
-          <span>1,423 websites beveiligd en geoptimaliseerd deze maand</span>
+          <span>Trusted by websites across Europe</span>
         </div>
       )}
 
@@ -350,25 +350,25 @@ export default function Home() {
           
           <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>🔒</div>
-            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Privacy & GDPR</h3>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Privacy</h3>
             <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-              Zorg dat jouw website voldoet aan de laatste AVG wetgeving. Wij controleren direct op de aanwezigheid van correcte cookie banners en privacy policies.
+              Detect cookie, tracking and consent signals that may create privacy or compliance risk. This is a screening layer, not a legal determination.
             </p>
           </div>
 
           <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>🛡️</div>
-            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Technical Security</h3>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Security</h3>
             <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-              Bescherm je bezoekers tegen datalekken. Onze bot controleert of SSL-certificaten aanwezig zijn en je data veilig en versleuteld verstuurd wordt.
+              Review public exposure of software versions, security headers and transport protections. Findings indicate risk and recommended action, not guaranteed exploitation.
             </p>
           </div>
 
           <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>🔞</div>
-            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Age & Content Check</h3>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Age & Content Risk</h3>
             <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-              Voorkom dat je website ten onrechte als schadelijk of adult (18+) gemarkeerd wordt. De AI analyseert je teksten op risico-woorden.
+              Detect content and classification signals that may increase age-restriction or sensitive-content risk. This helps identify areas for review and mitigation.
             </p>
           </div>
 
@@ -519,13 +519,15 @@ export default function Home() {
               <span style={{ fontWeight: 900, fontSize: 18, color: "rgb(255, 255, 255)", textShadow: "rgba(0, 0, 0, 0.7) 0px 1px 3px" }}>PSA</span>
             </div>
             <div>
-              <div style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "rgb(255, 221, 0)", marginBottom: 4 }}>PSA Certified by fajaedeAI</div>
+              <div style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "rgb(255, 221, 0)", marginBottom: 4 }}>PSA Verified by FajaedeAI</div>
               <div style={{ fontSize: 16, fontWeight: 600 }}>Scan result for {result.url}</div>
-              <div style={{ fontSize: 13, color: "rgb(221, 221, 221)" }}>Status: <strong style={{ color: "rgb(0, 255, 153)" }}>OK</strong></div>
+              <div style={{ fontSize: 13, color: "rgb(221, 221, 221)" }}>
+                PSA status: <strong style={{ color: Number(result.trustScore ?? 0) >= 75 ? "rgb(0, 255, 153)" : "rgb(255, 179, 71)" }}>{Number(result.trustScore ?? 0) >= 75 ? "VERIFIED" : "NEEDS ATTENTION"}</strong>
+              </div>
             </div>
           </div>
           
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0px, 1fr))", gap: 12, marginTop: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isSmallScreen ? "1fr" : "repeat(3, minmax(0px, 1fr))", gap: 12, marginTop: 4 }}>
             <ScoreBox label="Privacy" score={result.privacy?.score || "N/A"} note={result.privacy?.note || "Geen data"} />
             <ScoreBox label="Security" score={result.security?.score || "N/A"} note={result.security?.note || "Geen data"} />
             <ScoreBox label="Age" score={result.age?.score || "N/A"} note={result.age?.note || "Geen data"} />
@@ -600,7 +602,7 @@ function ScoreBox({
   );
 }
 
-function DropdownItem({ icon, title, color = "#eee", href = "#" }: { icon: string; title: string; color?: string; href?: string }) {
+function DropdownItem({ icon, title, color = "#eee", href = "#", target, rel }: { icon: string; title: string; color?: string; href?: string; target?: string; rel?: string }) {
   const [isHovered, setIsHovered] = useState(false);
   
   // Check of de link extern is, zodat we hem veilig in een nieuw tabblad kunnen openen
@@ -608,8 +610,8 @@ function DropdownItem({ icon, title, color = "#eee", href = "#" }: { icon: strin
 
   return (
     <a href={href} 
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noopener noreferrer" : undefined}
+      target={target ?? (isExternal ? "_blank" : undefined)}
+      rel={rel ?? (isExternal ? "noopener noreferrer" : undefined)}
       style={{
         display: "flex", alignItems: "center", gap: 14, padding: "10px 20px",
         color, textDecoration: "none", fontSize: 15, fontWeight: 500,

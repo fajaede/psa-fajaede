@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    const retryAfter = checkScanRateLimit(request);
+    if (retryAfter !== null) {
+      return NextResponse.json({ error: "Te veel scans aangevraagd. Probeer het later opnieuw." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+    }
+
     const body = await request.json();
     const url = body?.url as string | undefined;
 
     if (!url || typeof url !== "string" || !/^https?:\/\//.test(url)) {
       return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
     }
+
+    const urlError = await validatePublicScanUrl(url);
+    if (urlError) return NextResponse.json({ error: urlError }, { status: 400 });
 
     const cleanUrl = url.toLowerCase().replace(/\/$/, "");
 
