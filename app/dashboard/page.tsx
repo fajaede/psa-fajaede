@@ -5,8 +5,8 @@ import React from 'react';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage({ searchParams }: { searchParams: { email?: string } }) {
-  const email = searchParams.email ?? '';
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
+  const { email = '' } = await searchParams;
   const authorized = isOwner(email);
 
   if (!authorized) {

@@ -14,7 +14,7 @@ type ReportData = {
   ageScore?: string | null;
   ageNote?: string | null;
   isPaid?: boolean;
-  benchmark?: { total: number; percentile: number };
+  benchmark?: { total: number; percentile: number } | null;
 };
 
 export default function ReportClient({ report }: { report: ReportData }) {
@@ -32,7 +32,8 @@ export default function ReportClient({ report }: { report: ReportData }) {
 
   const isGold = trustScore >= 90;
   const isSilver = trustScore >= 75 && trustScore < 90;
-  const embedCode = `<iframe src="https://psa-fajaede.vercel.app/embed/psa?url=${encodeURIComponent(report.url)}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
+  const badgeBaseUrl = process.env.NEXT_PUBLIC_PSA_API_BASE_URL || "";
+  const embedCode = `<iframe src="${badgeBaseUrl}/embed/psa?id=${encodeURIComponent(report.urlHash || "")}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
 
   return (
     <main

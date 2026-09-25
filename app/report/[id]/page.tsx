@@ -29,40 +29,45 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   if (report.privacyScore?.includes("P1")) trustScore -= 20;
   if (report.ageScore?.includes("A3")) trustScore -= 10;
 
-  const benchmark = { total: 100709, percentile: 82 }; // Standaard fallback
+  let benchmark: { total: number; percentile: number } | null = null;
   try {
+    const meilisearchHost = process.env.MEILISEARCH_HOST;
+    const meilisearchApiKey = process.env.MEILISEARCH_API_KEY;
+    const indexName = process.env.MEILISEARCH_INDEX || "pages";
+    if (!meilisearchHost || !meilisearchApiKey) throw new Error("Benchmark datastore is not configured");
+
     // 1. Vraag het totale aantal websites in jouw Meilisearch database
-    const statsRes = await fetch("http://116.203.39.166:7700/indexes/pages/stats", {
-      headers: { "Authorization": "Bearer Fajaede_Secure_Meili_Key_928374!" },
-      next: { revalidate: 3600 } // Vercel mag dit 1 uur onthouden voor snelheid
-    } as RequestInit & { next?: { revalidate: number } });
+    const statsRes = await fetch(`${meilisearchHost}/indexes/${indexName}/stats`, {
+      headers: { Authorization: `Bearer ${meilisearchApiKey}` },
+      next: { revalidate: 3600 },
+    });
     
     if (statsRes.ok) {
       const stats = await statsRes.json();
-      if (stats.numberOfDocuments) benchmark.total = stats.numberOfDocuments;
+      if (!Number.isInteger(stats.numberOfDocuments) || stats.numberOfDocuments <= 0) throw new Error("Benchmark datastore returned no document count");
+      benchmark = { total: stats.numberOfDocuments, percentile: 1 };
     }
 
+    if (!benchmark) throw new Error("Benchmark stats request failed");
+
     // 2. Vraag Meilisearch hoeveel websites een LAGERE (slechtere) score hebben
-    const searchRes = await fetch("http://116.203.39.166:7700/indexes/pages/search", {
+    const searchRes = await fetch(`${meilisearchHost}/indexes/${indexName}/search`, {
       method: "POST",
       headers: { 
-        "Authorization": "Bearer Fajaede_Secure_Meili_Key_928374!",
+        Authorization: `Bearer ${meilisearchApiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ limit: 0, filter: `trust_score < ${trustScore}` })
     });
     
-    if (searchRes.ok) {
-      const searchData = await searchRes.json();
-      const worseCount = searchData.estimatedTotalHits || searchData.totalHits || 0;
-      benchmark.percentile = Math.max(1, Math.round((worseCount / benchmark.total) * 100));
-    } else {
-      if (trustScore === 100) benchmark.percentile = 92;
-      else if (trustScore >= 80) benchmark.percentile = 74;
-      else if (trustScore >= 60) benchmark.percentile = 45;
-      else benchmark.percentile = 12;
-    }
-  } catch {} // Negeer fouten, fallback wordt gebruikt
+    if (!searchRes.ok) throw new Error("Benchmark search request failed");
+    const searchData = await searchRes.json();
+    const worseCount = searchData.estimatedTotalHits ?? searchData.totalHits;
+    if (!Number.isInteger(worseCount) || worseCount < 0) throw new Error("Benchmark search returned no count");
+    benchmark.percentile = Math.min(99, Math.max(1, Math.round((worseCount / benchmark.total) * 100)));
+  } catch (error) {
+    console.warn("Live benchmark unavailable:", error);
+  }
 
   // Zet dates om naar strings voor de client component
   const safeReport = {
