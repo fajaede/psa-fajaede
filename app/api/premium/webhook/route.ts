@@ -48,10 +48,17 @@ export async function POST(request: Request) {
     });
 
     if (typeof orderId === "string") {
-      await prisma.premiumOrder.update({
+      const order = await prisma.premiumOrder.update({
         where: { id: orderId },
         data: { paymentId, status },
       });
+
+      if (status === "paid" && order.scanUrl && order.scanMode === "seo") {
+        await prisma.seoScan.updateMany({ where: { url: order.scanUrl }, data: { isPaid: true } });
+      }
+      if (status === "paid" && order.scanUrl && order.scanMode === "geo") {
+        await prisma.geoScan.updateMany({ where: { url: order.scanUrl }, data: { isPaid: true } });
+      }
     } else {
       await prisma.premiumOrder.updateMany({
         where: { paymentId },

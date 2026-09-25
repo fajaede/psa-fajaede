@@ -1,6 +1,7 @@
 "use server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validatePublicScanUrl } from "@/lib/scan-guard";
 
 // Helper to map tier to price (in euros)
 function getPrice(tier: string): number | null {
@@ -16,10 +17,18 @@ function getPrice(tier: string): number | null {
 
 export async function POST(request: Request) {
   try {
-    const { tier, email } = await request.json();
+    const { tier, email, scanMode, scanUrl } = await request.json();
     const price = getPrice(tier);
     if (price === null || typeof email !== "string" || !email.trim()) {
       return NextResponse.json({ error: "A valid premium tier and email address are required" }, { status: 400 });
+    }
+
+    const validScanMode = scanMode === "seo" || scanMode === "geo";
+    if (scanMode !== undefined && !validScanMode) {
+      return NextResponse.json({ error: "Invalid scan mode" }, { status: 400 });
+    }
+    if (validScanMode && (typeof scanUrl !== "string" || !scanUrl.trim() || await validatePublicScanUrl(scanUrl))) {
+      return NextResponse.json({ error: "A valid public scan URL is required" }, { status: 400 });
     }
 
     // Create a pending order in the DB (price in cents)
@@ -29,6 +38,8 @@ export async function POST(request: Request) {
         tier,
         paymentId: "pending",
         priceCents: Math.round(price * 100),
+        scanUrl: validScanMode ? scanUrl.trim().toLowerCase().replace(/\/$/, "") : null,
+        scanMode: validScanMode ? scanMode : null,
       },
     });
 
@@ -46,10 +57,10 @@ export async function POST(request: Request) {
        },
        body: JSON.stringify({
         amount: { currency: "EUR", value: price.toFixed(2) },
-        description: `${tier} SEO re-scan for ${email.trim()}`,
+        description: `${tier} ${validScanMode ? scanMode.toUpperCase() : "SEO"} re-scan for ${email.trim()}`,
         redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
         webhookUrl: `${baseUrl}/api/premium/webhook`,
-        metadata: { orderId: order.id },
+        metadata: { orderId: order.id, scanMode: validScanMode ? scanMode : undefined, scanUrl: validScanMode ? scanUrl : undefined },
       }),
     });
 

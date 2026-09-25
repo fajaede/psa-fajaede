@@ -1,6 +1,7 @@
 // app/price/page.tsx
 "use client";
 import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const tiers = [
@@ -31,8 +32,20 @@ export default function PricePage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [scanMode, setScanMode] = useState<"seo" | "geo" | null>(null);
+  const [scanUrl, setScanUrl] = useState("");
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setScanMode(searchParams.get("mode") === "geo" ? "geo" : searchParams.get("mode") === "seo" ? "seo" : null);
+    setScanUrl(searchParams.get("url") || "");
+  }, []);
 
   const handleUpgrade = async (tierKey: string) => {
+    if (tierKey === "FREE") {
+      router.push("/");
+      return;
+    }
     if (!email.trim()) {
       alert("Vul eerst uw e-mailadres in.");
       return;
@@ -42,7 +55,7 @@ export default function PricePage() {
       const res = await fetch("/api/premium/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tierKey, email: email.trim() }),
+        body: JSON.stringify({ tier: tierKey, email: email.trim(), scanMode, scanUrl }),
       });
       if (!res.ok) throw new Error("Payment creation failed");
       const { checkoutUrl } = await res.json();
@@ -58,7 +71,8 @@ export default function PricePage() {
   return (
     <main style={styles.container}>
       <div style={styles.checkoutBadge}>Fajaede Secure Checkout</div>
-      <h1 style={styles.title}>Kies jouw SEO‑her‑scan</h1>
+      <h1 style={styles.title}>Kies jouw {scanMode === "geo" ? "GEO" : "SEO"}‑her‑scan</h1>
+      {scanMode && scanUrl && <p style={styles.context}>Nieuwe live {scanMode.toUpperCase()}-scan voor {scanUrl}</p>}
       <label style={styles.emailLabel}>
         E-mailadres voor de bestelling
         <input
@@ -115,6 +129,7 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: 1,
     marginBottom: 12,
   },
+  context: { width: "100%", maxWidth: 600, color: "#aaa", textAlign: "center", margin: "-12px 0 24px" },
   emailLabel: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, color: "#ccc" },
   emailInput: { boxSizing: "border-box", width: "100%", padding: "12px 14px", border: "1px solid #555", borderRadius: 8, background: "#111", color: "#fff", fontSize: 16 },
   grid: {

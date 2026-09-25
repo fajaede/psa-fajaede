@@ -58,6 +58,8 @@ model PremiumOrder {
   tier        Tier
   paymentId   String
   priceCents  Int
+  scanUrl     String?
+  scanMode    String?
   status      String @default("pending")
   createdAt   DateTime @default(now())
 }

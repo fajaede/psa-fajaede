@@ -37,8 +37,11 @@ export default function Home() {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  const handlePremiumUpgrade = () => {
-    router.push('/price');
+  const handlePremiumUpgrade = (mode?: "seo" | "geo", scanUrl?: string) => {
+    const params = new URLSearchParams();
+    if (mode) params.set("mode", mode);
+    if (scanUrl) params.set("url", scanUrl);
+    router.push(`/price${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   useEffect(() => {
@@ -425,7 +428,7 @@ export default function Home() {
               </p>
               <button
                 style={{ background: "#ffdd00", color: "#000", border: "none", padding: "12px 20px", borderRadius: 8, fontWeight: 800, cursor: "pointer", fontSize: 14, transition: "transform 0.2s" }}
-                onClick={handlePremiumUpgrade}
+                onClick={() => handlePremiumUpgrade(result.scanMode === "seo" || result.scanMode === "geo" ? result.scanMode : undefined, result.url)}
                 onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
                 onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
