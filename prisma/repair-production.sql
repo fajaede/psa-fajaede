@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS "GeoScan" (
 CREATE UNIQUE INDEX IF NOT EXISTS "SeoScan_url_key" ON "SeoScan"("url");
 CREATE UNIQUE INDEX IF NOT EXISTS "GeoScan_url_key" ON "GeoScan"("url");
 
+ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "scanUrl" TEXT;
+ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "scanMode" TEXT;
+
 DO $$
 BEGIN
   IF EXISTS (
