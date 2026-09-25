@@ -15,6 +15,7 @@ type ReportData = {
   ageNote?: string | null;
   isPaid?: boolean;
   benchmark?: { total: number; percentile: number } | null;
+  badgeBaseUrl: string;
 };
 
 export default function ReportClient({ report }: { report: ReportData }) {
@@ -32,8 +33,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
 
   const isGold = trustScore >= 90;
   const isSilver = trustScore >= 75 && trustScore < 90;
-  const badgeBaseUrl = process.env.NEXT_PUBLIC_PSA_API_BASE_URL || "";
-  const embedCode = `<iframe src="${badgeBaseUrl}/embed/psa?id=${encodeURIComponent(report.urlHash || "")}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
+  const embedCode = `<iframe src="${report.badgeBaseUrl}/embed/psa?id=${encodeURIComponent(report.urlHash || "")}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
 
   return (
     <main

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
     }
 
-    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "https://fajaede.nl").replace(/\/$/, "");
+    const baseUrl = (process.env.BASE_URL || "https://fajaede.nl").replace(/\/$/, "");
     const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
        method: "POST",
        headers: {
