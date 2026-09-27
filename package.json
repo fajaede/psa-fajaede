@@ -6,7 +6,7 @@
     "dev": "next dev",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./prisma/schema.prisma",
-    "build": "npm run prisma:generate && next build",
+    "build": "npm run prisma:generate && next build --webpack",
     "start": "next start"
   },
   "dependencies": {

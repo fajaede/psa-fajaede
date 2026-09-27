@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
     }
 
-    const baseUrl = (process.env.BASE_URL || "https://fajaede.nl").replace(/\/$/, "");
+    const baseUrl = (process.env.PREMIUM_APP_URL || new URL(request.url).origin).replace(/\/$/, "");
     const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
        method: "POST",
        headers: {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         amount: { currency: "EUR", value: price.toFixed(2) },
         description: `${tier} ${validScanMode ? scanMode.toUpperCase() : "SEO"} re-scan for ${email.trim()}`,
         redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
-        webhookUrl: `${baseUrl}/api/premium/webhook`,
+        webhookUrl: process.env.MOLLIE_WEBHOOK_URL || "https://fajaede.nl/wp-json/fajaedeseo/v1/webhook/mollie",
         metadata: { orderId: order.id, scanMode: validScanMode ? scanMode : undefined, scanUrl: validScanMode ? scanUrl : undefined },
       }),
     });

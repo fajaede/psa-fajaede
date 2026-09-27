@@ -133,7 +133,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
           </div>
 
           {/* Resultaten */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+          <div className="scoreGrid">
              <ScoreBox label="Privacy" score={report.privacyScore || "N/A"} note={report.privacyNote || "-"} />
              <ScoreBox label="Security" score={report.securityScore || "N/A"} note={report.securityNote || "-"} />
              <ScoreBox label="Age" score={report.ageScore || "N/A"} note={report.ageNote || "-"} />
@@ -267,7 +267,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
 
 function ScoreBox({ label, score, note }: { label: string; score: string | number; note: string }) {
   return (
-    <div style={{ padding: 16, borderRadius: 12, background: "rgba(5,5,5,0.7)", border: "1px solid #333" }}>
+    <div className="scoreBox" style={{ padding: 16, borderRadius: 12, background: "rgba(5,5,5,0.7)", border: "1px solid #333" }}>
       <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, color: "#aaa", marginBottom: 6 }}>
         {label}
       </div>

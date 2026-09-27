@@ -79,13 +79,38 @@ body {
 .checkPass { background: rgba(0,255,153,0.1); border-left: 4px solid #00ff99; padding: 12px; margin: 8px 0; border-radius: 8px; }
 .checkFail { background: rgba(255,77,77,0.1); border-left: 4px solid #ff4d4f; padding: 12px; margin: 8px 0; border-radius: 8px; }
 
-/* Tab button responsive: hide text on mobile, show SVG only */
+.tabBtnDescription { display: none; }
+
 @media (max-width: 640px) {
-  .tabBtn span { display: none; }
-  .tabBtn svg { width: 20px; height: 20px; }
+  .scanModeTabs {
+    display: flex !important;
+    flex-direction: column;
+    width: min(100%, 420px);
+    box-sizing: border-box;
+    border-radius: 16px !important;
+  }
+  .tabBtn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px !important;
+    border-radius: 12px !important;
+    text-align: left;
+  }
+  .tabBtnContent { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .tabBtnLabel { display: block; }
+  .tabBtnDescription { display: block; font-size: 12px; font-weight: 400; line-height: 1.4; opacity: 0.8; }
 }
 
 /* Added responsive fixes */
 html, body { overflow-x: hidden; }
 main { overflow-x: hidden; }
 .searchForm { width: 100%; box-sizing: border-box; }
+.scoreGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.scoreBox { min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .scoreGrid { grid-template-columns: minmax(0, 1fr); }
+}

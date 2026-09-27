@@ -244,10 +244,16 @@ export default function Home() {
         </p>
 
         {/* Multi-Tool Tab Switcher */}
-        <div style={{ display: "inline-flex", gap: 8, background: "rgba(255,255,255,0.05)", padding: 6, borderRadius: 999, marginBottom: 16, position: "relative", zIndex: 10, border: "1px solid #333", backdropFilter: "blur(10px)" }}>
-            <button className="tabBtn" onClick={() => setScanMode("psa")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "psa" ? "#ff0000" : "transparent", color: scanMode === "psa" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}><span>🛡️ PSA Trust</span></button>
-            <button className="tabBtn" onClick={() => setScanMode("seo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "seo" ? "#00ff99" : "transparent", color: scanMode === "seo" ? "#000" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}><span>📈 SEO Audit</span></button>
-            <button className="tabBtn" onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}><span>🌍 GEO Local</span></button>
+        <div className="scanModeTabs" style={{ display: "inline-flex", gap: 8, background: "rgba(255,255,255,0.05)", padding: 6, borderRadius: 999, marginBottom: 16, position: "relative", zIndex: 10, border: "1px solid #333", backdropFilter: "blur(10px)" }}>
+            <button className="tabBtn" onClick={() => setScanMode("psa")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "psa" ? "#ff0000" : "transparent", color: scanMode === "psa" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
+              <span className="tabIcon" aria-hidden="true">🛡️</span><span className="tabBtnContent"><span className="tabBtnLabel">PSA Trust</span><span className="tabBtnDescription">Privacy, beveiliging en leeftijdsrisico</span></span>
+            </button>
+            <button className="tabBtn" onClick={() => setScanMode("seo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "seo" ? "#00ff99" : "transparent", color: scanMode === "seo" ? "#000" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
+              <span className="tabIcon" aria-hidden="true">📈</span><span className="tabBtnContent"><span className="tabBtnLabel">SEO Audit</span><span className="tabBtnDescription">Technische SEO, content en prestaties</span></span>
+            </button>
+            <button className="tabBtn" onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
+              <span className="tabIcon" aria-hidden="true">🌍</span><span className="tabBtnContent"><span className="tabBtnLabel">GEO Local</span><span className="tabBtnDescription">Lokale vindbaarheid en Google Maps</span></span>
+            </button>
         </div>
       </section>
 

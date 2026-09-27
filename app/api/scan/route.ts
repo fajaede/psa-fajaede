@@ -43,6 +43,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     if (!resp.ok) {
+      if (resp.status === 525) {
+        return NextResponse.json(
+          { error: "Cloudflare meldt status 525: de TLS-handshake tussen Cloudflare en de originserver van deze website mislukt. Controleer het origin-certificaat en de SSL/TLS-modus; dit is een configuratieprobleem aan de website." },
+          { status: 502 }
+        );
+      }
       if (resp.status === 403 || resp.status === 503) {
         return NextResponse.json(
           { error: "Scan geblokkeerd: Deze website gebruikt een strikte firewall (zoals Cloudflare) die automatische scans weigert." },
