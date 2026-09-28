@@ -14,6 +14,7 @@ type ScanResult = {
   criticalIssues?: string[];
   fromCache?: boolean;
   cachedAt?: string;
+  benchmark?: { totalScans: number; percentile: number | null; minimumSampleSize: number };
   [key: string]: unknown;
 };
 
@@ -430,20 +431,47 @@ export default function Home() {
                 <span>⚡</span> Opgeslagen Rapport (Cache)
               </h4>
               <p style={{ color: "#ccc", margin: "0 0 16px 0", fontSize: 14, lineHeight: 1.5 }}>
-                Dit is een eerder gegenereerde scan van <strong>{new Date(result.cachedAt!).toLocaleString("nl-NL")}</strong>. Heb je zojuist aanpassingen gedaan aan je website en wil je een nieuwe, live re-crawl uitvoeren om te zien of je fouten zijn opgelost?
+                Dit rapport is eerder gegenereerd op <strong>{result.cachedAt ? new Date(result.cachedAt).toLocaleString("nl-NL") : "een eerder moment"}</strong>. Hieronder kun je een nieuwe live scan bestellen.
               </p>
-              <button
-                style={{ background: "#ffdd00", color: "#000", border: "none", padding: "12px 20px", borderRadius: 8, fontWeight: 800, cursor: "pointer", fontSize: 14, transition: "transform 0.2s" }}
-                onClick={() => handlePremiumUpgrade(result.scanMode === "seo" || result.scanMode === "geo" ? result.scanMode : undefined, result.url)}
-                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                Upgrade naar Premium voor Live Re-crawls 🚀
-              </button>
             </div>
           )}
 
           {/* De Schokkende Score */}
+                    <div style={{ padding: "16px 0", borderTop: "1px solid #333", borderBottom: "1px solid #333", textAlign: "left" }}>
+                      <h3 style={{ color: "#fff", margin: "0 0 8px", fontSize: 18 }}>
+                        Betaalde live {result.scanMode.toUpperCase()}-rescan
+                      </h3>
+                      <p style={{ color: "#aaa", margin: "0 0 16px", fontSize: 14, lineHeight: 1.5 }}>
+                        Kies een rescanpakket en betaal veilig via Mollie. De scan wordt opnieuw uitgevoerd voor {result.url}.
+                      </p>
+                      <button
+                        type="button"
+                        style={{ background: result.scanMode === "seo" ? "#00ff99" : "#00aaff", color: "#07110c", border: "none", padding: "12px 20px", borderRadius: 6, fontWeight: 800, cursor: "pointer", fontSize: 14, width: "100%", maxWidth: 360 }}
+                        onClick={() => handlePremiumUpgrade(result.scanMode === "seo" || result.scanMode === "geo" ? result.scanMode : undefined, result.url)}
+                      >
+                        Bekijk betaalde rescanopties
+                      </button>
+                    </div>
+
+                    <div style={{ padding: "16px 0", borderBottom: "1px solid #333", textAlign: "left" }}>
+                      <h3 style={{ color: "#fff", margin: "0 0 8px", fontSize: 18 }}>Jij versus de rest</h3>
+                      {result.benchmark && result.benchmark.percentile !== null ? (
+                        <>
+                          <p style={{ color: "#ccc", margin: "0 0 14px", fontSize: 14, lineHeight: 1.5 }}>
+                            Met een score van <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong> scoor je hoger dan <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>{result.benchmark.percentile}%</strong> van de {result.benchmark.totalScans} opgeslagen {result.scanMode.toUpperCase()}-scans.
+                          </p>
+                          <div role="img" aria-label={`Beter dan ${result.benchmark.percentile}% van ${result.benchmark.totalScans} opgeslagen scans`} style={{ height: 8, background: "#292929", borderRadius: 999, overflow: "hidden" }}>
+                            <div style={{ width: `${result.benchmark.percentile}%`, height: "100%", background: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }} />
+                          </div>
+                        </>
+                      ) : (
+                        <p style={{ color: "#aaa", margin: 0, fontSize: 14, lineHeight: 1.5 }}>
+                          Een betrouwbare vergelijking verschijnt zodra er minimaal {result.benchmark?.minimumSampleSize ?? 5} {result.scanMode.toUpperCase()}-scans beschikbaar zijn. Nu beschikbaar: {result.benchmark?.totalScans ?? 0}.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* De Schokkende Score */}
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "32px 0" }}>
             <div style={{ width: 140, height: 140, borderRadius: "50%", border: "4px solid #ff4d4f", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "rgba(255,0,0,0.05)", boxShadow: "0 0 30px rgba(255,0,0,0.2)" }}>
                 <span style={{ fontSize: 42, fontWeight: 900, color: "#ff4d4f" }}>{result.trustScore}</span>

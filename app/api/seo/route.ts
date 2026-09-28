@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
+import { getSeoBenchmark } from "@/lib/scan-benchmark";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({
         trustScore: cachedScan.trustScore,
         criticalIssues: cachedScan.criticalIssues,
+        benchmark: await getSeoBenchmark(cachedScan.trustScore),
         fromCache: true,
         cachedAt: cachedScan.createdAt.toISOString(),
       });
@@ -254,7 +256,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       console.warn("SEO result could not be cached:", error);
     }
 
-    return NextResponse.json(responseData);
+    return NextResponse.json({
+      ...responseData,
+      benchmark: await getSeoBenchmark(responseData.trustScore),
+    });
   } catch (e: unknown) {
     console.error("SEO scan error:", e);
     return NextResponse.json({ error: "SEO scan failed" }, { status: 500 });
