@@ -14,7 +14,14 @@ type ScanResult = {
   criticalIssues?: string[];
   fromCache?: boolean;
   cachedAt?: string;
-  benchmark?: { totalScans: number; percentile: number | null; minimumSampleSize: number };
+  benchmark?: { indexDocuments: number; comparableSites: number; percentile: number | null; status: string };
+  scoreSource?: "live" | "local-fallback" | "stored-fallback";
+  liveScoring?: {
+    score: number;
+    maxScore: number;
+    htmlLength: number;
+    breakdown: Record<string, number>;
+  } | null;
   [key: string]: unknown;
 };
 
@@ -455,18 +462,25 @@ export default function Home() {
 
                     <div style={{ padding: "16px 0", borderBottom: "1px solid #333", textAlign: "left" }}>
                       <h3 style={{ color: "#fff", margin: "0 0 8px", fontSize: 18 }}>Jij versus de rest</h3>
-                      {result.benchmark && result.benchmark.percentile !== null ? (
+                      {result.benchmark?.status === "available" && result.benchmark.percentile !== null ? (
                         <>
                           <p style={{ color: "#ccc", margin: "0 0 14px", fontSize: 14, lineHeight: 1.5 }}>
-                            Met een score van <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong> scoor je hoger dan <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>{result.benchmark.percentile}%</strong> van de {result.benchmark.totalScans} opgeslagen {result.scanMode.toUpperCase()}-scans.
+                            Je {result.scanMode.toUpperCase()}-score is <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong>. Dat is hoger dan <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>{result.benchmark.percentile}%</strong> van de {result.benchmark.comparableSites.toLocaleString("nl-NL")} sites in de Fajaede.eu-index met een vergelijkbare {result.scanMode === "seo" ? "seo_score" : "geo_score"}.
                           </p>
-                          <div role="img" aria-label={`Beter dan ${result.benchmark.percentile}% van ${result.benchmark.totalScans} opgeslagen scans`} style={{ height: 8, background: "#292929", borderRadius: 999, overflow: "hidden" }}>
+                          <p style={{ color: "#777", margin: "0 0 10px", fontSize: 12 }}>Totaal geïndexeerd: {result.benchmark.indexDocuments.toLocaleString("nl-NL")} pagina&apos;s.</p>
+                          <div role="img" aria-label={`Beter dan ${result.benchmark.percentile}% van ${result.benchmark.comparableSites} vergelijkbare sites`} style={{ height: 8, background: "#292929", borderRadius: 999, overflow: "hidden" }}>
                             <div style={{ width: `${result.benchmark.percentile}%`, height: "100%", background: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }} />
                           </div>
                         </>
                       ) : (
                         <p style={{ color: "#aaa", margin: 0, fontSize: 14, lineHeight: 1.5 }}>
-                          Een betrouwbare vergelijking verschijnt zodra er minimaal {result.benchmark?.minimumSampleSize ?? 5} {result.scanMode.toUpperCase()}-scans beschikbaar zijn. Nu beschikbaar: {result.benchmark?.totalScans ?? 0}.
+                          {result.benchmark?.status === "score-field-missing"
+                            ? `De index bevat ${result.benchmark.indexDocuments.toLocaleString("nl-NL")} pagina's, maar geen ${result.scanMode === "seo" ? "seo_score" : "geo_score"}-waarden. Een betrouwbaar percentiel is daarom niet beschikbaar.`
+                            : result.benchmark?.status === "insufficient-data"
+                              ? `Er zijn ${result.benchmark.comparableSites} pagina's met een geldige score. Voor een betrouwbare vergelijking zijn minimaal vijf scored sites nodig.`
+                              : result.benchmark?.status === "no-score-variance"
+                                ? `Alle ${result.benchmark.comparableSites} huidige indexsites hebben dezelfde ${result.scanMode === "seo" ? "seo_score" : "geo_score"}. Er is nog geen zinvol percentiel te berekenen.`
+                                : "De Fajaede.eu-index is momenteel niet beschikbaar voor een benchmark. Er wordt geen schatting getoond."}
                         </p>
                       )}
                     </div>
@@ -475,9 +489,31 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "32px 0" }}>
             <div style={{ width: 140, height: 140, borderRadius: "50%", border: "4px solid #ff4d4f", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: "rgba(255,0,0,0.05)", boxShadow: "0 0 30px rgba(255,0,0,0.2)" }}>
                 <span style={{ fontSize: 42, fontWeight: 900, color: "#ff4d4f" }}>{result.trustScore}</span>
-                <span style={{ fontSize: 14, color: "#aaa" }}>/ 100</span>
+                <span style={{ fontSize: 14, color: "#aaa" }}>/ {result.liveScoring?.maxScore ?? 100}</span>
             </div>
           </div>
+          <div style={{ marginTop: -24, color: "#aaa", fontSize: 13 }}>
+            {result.scoreSource === "live"
+              ? "Live SEO + GEO-score van de Fajaede benchmark-API"
+              : result.scoreSource === "stored-fallback"
+                ? "Opgeslagen score (live score tijdelijk niet beschikbaar)"
+                : "Lokale scan-score (live score tijdelijk niet beschikbaar)"}
+          </div>
+          {result.liveScoring && (
+            <div style={{ width: "100%", textAlign: "left", background: "#080808", border: "1px solid #292929", borderRadius: 12, padding: 20 }}>
+              <h3 style={{ color: "#fff", margin: "0 0 12px", fontSize: 16 }}>Live score-opbouw</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+                {Object.entries(result.liveScoring.breakdown).map(([key, value]) => (
+                  <div key={key} style={{ color: "#ccc", fontSize: 13 }}>
+                    {key.replaceAll("_", " ")}: <strong style={{ color: "#fff" }}>{value}</strong>
+                  </div>
+                ))}
+              </div>
+              <p style={{ color: "#777", fontSize: 12, margin: "12px 0 0" }}>
+                Score over {result.liveScoring.htmlLength.toLocaleString("nl-NL")} HTML-tekens.
+              </p>
+            </div>
+          )}
 
           {/* THE 3D GLOBE / GEO RADAR EFFECT (Alleen voor GEO Scans) */}
           {result.scanMode === "geo" && (

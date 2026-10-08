@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
 import { getGeoBenchmark } from "@/lib/scan-benchmark";
+import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -33,15 +34,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (cachedScan) {
+      const liveScoring = await getLiveSeoGeoScore(cleanUrl);
+      const trustScore = liveScoring?.score ?? cachedScan.trustScore;
+      if (liveScoring) {
+        try {
+          await prisma.geoScan.update({ where: { url: cleanUrl }, data: { trustScore } });
+        } catch (error) {
+          console.warn("Live GEO score could not be cached:", error);
+        }
+      }
       return NextResponse.json({
-        trustScore: cachedScan.trustScore,
+        trustScore,
         criticalIssues: cachedScan.criticalIssues,
-        benchmark: await getGeoBenchmark(cachedScan.trustScore),
+        benchmark: await getGeoBenchmark(trustScore),
+        scoreSource: liveScoring ? "live" : "stored-fallback",
+        liveScoring,
         fromCache: true,
         cachedAt: cachedScan.createdAt.toISOString(),
       });
     }
 
+    const liveScoringPromise = getLiveSeoGeoScore(cleanUrl);
     const startTime = Date.now();
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8500), // Voorkom 502 Bad Gateway door Vercel timeout
@@ -124,8 +137,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       issues.push(`Trage server response (${fetchTime}ms). Lokale mobiele zoekers (on-the-go) verlaten trage websites direct.`);
     }
 
+    const liveScoring = await liveScoringPromise;
     const responseData = {
-      trustScore: Math.max(12, score), // Zorg dat de score nooit onder de 12 zakt
+      trustScore: liveScoring?.score ?? Math.max(12, score), // Keep the existing local score as a fallback.
       criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je lokale SEO basis staat als een huis!"],
     };
 
@@ -150,6 +164,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       ...responseData,
+      scoreSource: liveScoring ? "live" : "local-fallback",
+      liveScoring,
       benchmark: await getGeoBenchmark(responseData.trustScore),
     });
   } catch (e: unknown) {

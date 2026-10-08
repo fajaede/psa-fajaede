@@ -59,7 +59,7 @@ export async function POST(request: Request) {
         amount: { currency: "EUR", value: price.toFixed(2) },
         description: `${tier} ${validScanMode ? scanMode.toUpperCase() : "SEO"} re-scan for ${email.trim()}`,
         redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
-        webhookUrl: process.env.MOLLIE_WEBHOOK_URL || "https://fajaede.nl/wp-json/fajaedeseo/v1/webhook/mollie",
+        webhookUrl: `${baseUrl}/api/premium/webhook`,
         metadata: { orderId: order.id, scanMode: validScanMode ? scanMode : undefined, scanUrl: validScanMode ? scanUrl : undefined },
       }),
     });

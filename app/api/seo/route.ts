@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
 import { getSeoBenchmark } from "@/lib/scan-benchmark";
+import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -33,15 +34,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (cachedScan) {
+      const liveScoring = await getLiveSeoGeoScore(cleanUrl);
+      const trustScore = liveScoring?.score ?? cachedScan.trustScore;
+      if (liveScoring) {
+        try {
+          await prisma.seoScan.update({ where: { url: cleanUrl }, data: { trustScore } });
+        } catch (error) {
+          console.warn("Live SEO score could not be cached:", error);
+        }
+      }
       return NextResponse.json({
-        trustScore: cachedScan.trustScore,
+        trustScore,
         criticalIssues: cachedScan.criticalIssues,
-        benchmark: await getSeoBenchmark(cachedScan.trustScore),
+        benchmark: await getSeoBenchmark(trustScore),
+        scoreSource: liveScoring ? "live" : "stored-fallback",
+        liveScoring,
         fromCache: true,
         cachedAt: cachedScan.createdAt.toISOString(),
       });
     }
 
+    const liveScoringPromise = getLiveSeoGeoScore(cleanUrl);
     const startTime = Date.now();
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8500), // Voorkom 502 Bad Gateway door Vercel timeout
@@ -239,8 +252,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     checks.push({ name: 'Keyword "privacy" density', passed: keywordCount >= 2, score: Math.min(100, keywordCount * 10), message: `${keywordCount} occurrences of "${keyword}"` });
 
     // Build response data including checks
+    const liveScoring = await liveScoringPromise;
     const responseData = {
-      trustScore: Math.max(12, score),
+      trustScore: liveScoring?.score ?? Math.max(12, score),
       criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je SEO basis staat goed!"],
       checks,
     };
@@ -258,6 +272,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       ...responseData,
+      scoreSource: liveScoring ? "live" : "local-fallback",
+      liveScoring,
       benchmark: await getSeoBenchmark(responseData.trustScore),
     });
   } catch (e: unknown) {
