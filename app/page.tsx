@@ -19,8 +19,21 @@ type ScanResult = {
   liveScoring?: {
     score: number;
     maxScore: number;
+    seoScore: number;
+    geoScore: number;
+    combinedScore: number;
     htmlLength: number;
-    breakdown: Record<string, number>;
+    breakdown: Array<{
+      code: string;
+      label: string;
+      passed: boolean | null;
+      points: number | null;
+      maxPoints: number;
+      details: string;
+    }>;
+    issues: Array<{ label: string; details: string }>;
+    coverage: number;
+    limitations: string[];
   } | null;
   [key: string]: unknown;
 };
@@ -494,7 +507,7 @@ export default function Home() {
           </div>
           <div style={{ marginTop: -24, color: "#aaa", fontSize: 13 }}>
             {result.scoreSource === "live"
-              ? "Live SEO + GEO-score van de Fajaede benchmark-API"
+              ? `Live ${result.scanMode === "seo" ? "on-page SEO" : "local GEO"}-score van de Fajaede audit-API`
               : result.scoreSource === "stored-fallback"
                 ? "Opgeslagen score (live score tijdelijk niet beschikbaar)"
                 : "Lokale scan-score (live score tijdelijk niet beschikbaar)"}
@@ -502,16 +515,30 @@ export default function Home() {
           {result.liveScoring && (
             <div style={{ width: "100%", textAlign: "left", background: "#080808", border: "1px solid #292929", borderRadius: 12, padding: 20 }}>
               <h3 style={{ color: "#fff", margin: "0 0 12px", fontSize: 16 }}>Live score-opbouw</h3>
+              <p style={{ color: "#ccc", margin: "0 0 14px", fontSize: 13 }}>
+                Afzonderlijke scores: SEO <strong style={{ color: "#00ff99" }}>{result.liveScoring.seoScore}/100</strong>
+                {" · "}lokale GEO <strong style={{ color: "#00aaff" }}>{result.liveScoring.geoScore}/100</strong>
+              </p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
-                {Object.entries(result.liveScoring.breakdown).map(([key, value]) => (
-                  <div key={key} style={{ color: "#ccc", fontSize: 13 }}>
-                    {key.replaceAll("_", " ")}: <strong style={{ color: "#fff" }}>{value}</strong>
+                {result.liveScoring.breakdown.map((check) => (
+                  <div key={check.code} style={{ color: "#ccc", fontSize: 13, padding: 10, borderRadius: 8, background: check.passed === false ? "rgba(255,77,79,0.08)" : "rgba(0,255,153,0.05)" }}>
+                    <strong style={{ color: "#fff" }}>{check.label}</strong>
+                    <div>{check.points === null ? "Niet gecontroleerd" : `${check.points}/${check.maxPoints} punten`}</div>
+                    <div style={{ color: "#999", marginTop: 4 }}>{check.details}</div>
                   </div>
                 ))}
               </div>
               <p style={{ color: "#777", fontSize: 12, margin: "12px 0 0" }}>
-                Score over {result.liveScoring.htmlLength.toLocaleString("nl-NL")} HTML-tekens.
+                Auditdekking {result.liveScoring.coverage}% · {result.liveScoring.htmlLength.toLocaleString("nl-NL")} HTML-tekens.
               </p>
+              {result.liveScoring.limitations.length > 0 && (
+                <details style={{ color: "#888", fontSize: 12, marginTop: 12 }}>
+                  <summary style={{ cursor: "pointer" }}>Wat deze on-page audit niet controleert</summary>
+                  <ul style={{ paddingLeft: 20, lineHeight: 1.6 }}>
+                    {result.liveScoring.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}
+                  </ul>
+                </details>
+              )}
             </div>
           )}
 

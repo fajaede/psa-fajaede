@@ -34,7 +34,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (cachedScan) {
-      const liveScoring = await getLiveSeoGeoScore(cleanUrl);
+      const liveScoring = await getLiveSeoGeoScore(cleanUrl, "seo");
       const trustScore = liveScoring?.score ?? cachedScan.trustScore;
       if (liveScoring) {
         try {
@@ -45,7 +45,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
       return NextResponse.json({
         trustScore,
-        criticalIssues: cachedScan.criticalIssues,
+        criticalIssues: liveScoring
+          ? liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`)
+          : cachedScan.criticalIssues,
         benchmark: await getSeoBenchmark(trustScore),
         scoreSource: liveScoring ? "live" : "stored-fallback",
         liveScoring,
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    const liveScoringPromise = getLiveSeoGeoScore(cleanUrl);
+    const liveScoringPromise = getLiveSeoGeoScore(cleanUrl, "seo");
     const startTime = Date.now();
     const res = await fetch(url, {
       signal: AbortSignal.timeout(8500), // Voorkom 502 Bad Gateway door Vercel timeout
@@ -272,6 +274,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       ...responseData,
+      criticalIssues: liveScoring
+        ? liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`)
+        : responseData.criticalIssues,
       scoreSource: liveScoring ? "live" : "local-fallback",
       liveScoring,
       benchmark: await getSeoBenchmark(responseData.trustScore),
