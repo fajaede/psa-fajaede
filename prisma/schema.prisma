@@ -22,6 +22,7 @@ model PsaScan {
   hasCookieBanner Boolean  @default(false)
   email           String?
   isPaid          Boolean  @default(false)
+  taxDetails      Json?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   expiresAt       DateTime?
@@ -61,6 +62,7 @@ model PremiumOrder {
   scanUrl     String?
   scanMode    String?
   status      String @default("pending")
+  taxDetails  Json?
   createdAt   DateTime @default(now())
 }
 
@@ -69,4 +71,10 @@ model WebhookEvent {
   createdAt DateTime @default(now())
   type      String
   payload   Json
+}
+
+model ScanRateLimit {
+  clientHash  String   @id
+  bucketStart DateTime
+  count       Int      @default(0)
 }

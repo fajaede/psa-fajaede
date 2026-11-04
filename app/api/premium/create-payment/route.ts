@@ -2,26 +2,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validatePublicScanUrl } from "@/lib/scan-guard";
-
-// Helper to map tier to price (in euros)
-function getPrice(tier: string): number | null {
-  switch (tier) {
-    case "RE_SCAN":
-      return Number(process.env.PREMIUM_PRICE_RESCAN ?? "149");
-    case "RE_SCAN_ADV":
-      return Number(process.env.PREMIUM_PRICE_RESCAN_ADV ?? "249");
-    default:
-      return null;
-  }
-}
+import { calculateVatInclusiveQuote, VatQuoteError } from "@/lib/vat";
+import { getMollieApiKey } from "@/lib/mollie";
+import { getMollieWebhookUrl, getPsaAppUrl } from "@/lib/psa-urls";
 
 export async function POST(request: Request) {
   try {
-    const { tier, email, scanMode, scanUrl } = await request.json();
-    const price = getPrice(tier);
-    if (price === null || typeof email !== "string" || !email.trim()) {
+    const { tier, email, scanMode, scanUrl, countryCode, customerType, vatNumber } = await request.json();
+    if ((tier !== "RE_SCAN" && tier !== "RE_SCAN_ADV") || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "A valid premium tier and email address are required" }, { status: 400 });
     }
+
+    const taxDetails = await calculateVatInclusiveQuote({
+      product: tier,
+      countryCode,
+      ipCountryCode: request.headers.get("x-vercel-ip-country"),
+      customerType,
+      vatNumber,
+    });
 
     const validScanMode = scanMode === "seo" || scanMode === "geo";
     if (scanMode !== undefined && !validScanMode) {
@@ -37,18 +35,19 @@ export async function POST(request: Request) {
         email: email.trim(),
         tier,
         paymentId: "pending",
-        priceCents: Math.round(price * 100),
+        priceCents: taxDetails.grossAmountCents,
+        taxDetails: { ...taxDetails },
         scanUrl: validScanMode ? scanUrl.trim().toLowerCase().replace(/\/$/, "") : null,
         scanMode: validScanMode ? scanMode : null,
       },
     });
 
-    const mollieKey = process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
+    const mollieKey = getMollieApiKey();
     if (!mollieKey) {
       return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
     }
 
-    const baseUrl = (process.env.PREMIUM_APP_URL || new URL(request.url).origin).replace(/\/$/, "");
+    const baseUrl = getPsaAppUrl(request.url);
     const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
        method: "POST",
        headers: {
@@ -56,10 +55,10 @@ export async function POST(request: Request) {
          "Content-Type": "application/json",
        },
        body: JSON.stringify({
-        amount: { currency: "EUR", value: price.toFixed(2) },
+        amount: { currency: "EUR", value: (taxDetails.grossAmountCents / 100).toFixed(2) },
         description: `${tier} ${validScanMode ? scanMode.toUpperCase() : "SEO"} re-scan for ${email.trim()}`,
         redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
-        webhookUrl: `${baseUrl}/api/premium/webhook`,
+        webhookUrl: getMollieWebhookUrl(baseUrl),
         metadata: { orderId: order.id, scanMode: validScanMode ? scanMode : undefined, scanUrl: validScanMode ? scanUrl : undefined },
       }),
     });
@@ -83,6 +82,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ checkoutUrl });
   } catch (e) {
+    if (e instanceof VatQuoteError) {
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
     console.error(e);
     return NextResponse.json({ error: "Payment creation failed" }, { status: 500 });
   }

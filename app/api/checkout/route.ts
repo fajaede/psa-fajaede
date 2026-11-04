@@ -1,38 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createMollieClient } from "@mollie/api-client";
 import { prisma } from "@/lib/prisma";
+import { calculateVatInclusiveQuote, VatQuoteError } from "@/lib/vat";
+import { getMollieApiKey } from "@/lib/mollie";
+import { getMollieWebhookUrl, getPsaAppUrl } from "@/lib/psa-urls";
 
-export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
-  const urlHash = searchParams.get("urlHash");
-  const email = searchParams.get("email");
-
-  if (!urlHash) return NextResponse.json({ error: "Missing urlHash" }, { status: 400 });
-  if (!email) return NextResponse.json({ error: "Missing email address" }, { status: 400 });
-
-  const mollieApiKey = process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
-  if (!mollieApiKey) {
-    return NextResponse.json({ error: "Mollie API key missing in environment variables" }, { status: 500 });
-  }
-
-  const mollieClient = createMollieClient({ apiKey: mollieApiKey });
-
+export async function POST(request: Request) {
   try {
+    const { urlHash, email, countryCode, customerType, vatNumber } = await request.json();
+    if (typeof urlHash !== "string" || !urlHash || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "A report and email address are required." }, { status: 400 });
+    }
+
+    const taxDetails = await calculateVatInclusiveQuote({
+      product: "PSA_LICENSE",
+      countryCode,
+      ipCountryCode: request.headers.get("x-vercel-ip-country"),
+      customerType,
+      vatNumber,
+    });
     const report = await prisma.psaScan.findUnique({ where: { urlHash } });
     if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
-    // Sla het e-mailadres van de klant op in de database!
-    await prisma.psaScan.update({ where: { urlHash }, data: { email } });
+    const mollieApiKey = getMollieApiKey();
+    if (!mollieApiKey) {
+      return NextResponse.json({ error: "Mollie API key missing in environment variables" }, { status: 500 });
+    }
 
-    // Maak de betaling aan
+    const baseUrl = getPsaAppUrl(request.url);
+    await prisma.psaScan.update({
+      where: { urlHash },
+      data: { email: email.trim(), taxDetails: { ...taxDetails } },
+    });
+
+    const mollieClient = createMollieClient({ apiKey: mollieApiKey });
     const payment = await mollieClient.payments.create({
       amount: {
-        value: "9.00", // €9.00 - Let op: Mollie vereist ALTIJD 2 decimalen!
+        value: (taxDetails.grossAmountCents / 100).toFixed(2),
         currency: "EUR",
       },
       description: `FajaedeAI PSA Licentie - ${report.url}`,
-      redirectUrl: `${origin}/report/${urlHash}?payment=success`,
-      webhookUrl: process.env.MOLLIE_WEBHOOK_URL || "https://fajaede.nl/wp-json/fajaedeseo/v1/webhook/mollie",
+      redirectUrl: `${baseUrl}/report/${urlHash}?payment=success`,
+      webhookUrl: getMollieWebhookUrl(baseUrl),
       metadata: { urlHash },
     });
 
@@ -40,9 +49,11 @@ export async function GET(request: NextRequest) {
     if (!checkoutUrl) {
       throw new Error("Mollie did not return a checkout URL.");
     }
-    // Stuur de bezoeker door naar het veilige Mollie scherm
-    return NextResponse.redirect(checkoutUrl);
+    return NextResponse.json({ checkoutUrl });
   } catch (error) {
+    if (error instanceof VatQuoteError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Mollie Checkout Error:", error);
     return NextResponse.json({ error: "Payment creation failed" }, { status: 500 });
   }

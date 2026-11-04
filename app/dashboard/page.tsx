@@ -45,7 +45,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </thead>
             <tbody>
               {orders.map((o) => (
-                <tr key={o.id} style={styles.tr}>
+                <tr
+                  key={o.id}
+                  style={styles.tr}
+                  onMouseEnter={(event) => { event.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+                  onMouseLeave={(event) => { event.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
                   <td style={styles.td}>{o.id}</td>
                   <td style={styles.td}>{o.tier}</td>
                   <td style={styles.td}>{(o.priceCents / 100).toFixed(2)}</td>

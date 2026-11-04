@@ -14,6 +14,23 @@ type ScanResult = {
   criticalIssues?: string[];
   fromCache?: boolean;
   cachedAt?: string;
+  urlReputation?: {
+    status: "safe" | "unsafe" | "unknown";
+    provider: "google-web-risk" | null;
+    threatTypes: string[];
+    checkedAt: string | null;
+    reason: "checked" | "not-configured" | "provider-unavailable";
+  } | null;
+  generativeVisibility?: {
+    checks: Array<{
+      code: string;
+      label: string;
+      status: "pass" | "warning" | "unknown" | "not-measured";
+      details: string;
+    }>;
+    citationsMeasured: false;
+    limitations: string[];
+  } | null;
   benchmark?: { indexDocuments: number; comparableSites: number; percentile: number | null; status: string };
   scoreSource?: "live" | "local-fallback" | "stored-fallback";
   liveScoring?: {
@@ -79,7 +96,7 @@ export default function Home() {
   const getLoadingSteps = () => {
     if (scanMode === "psa") return ["Initiating FajaedeAI Core Engine...", "Analyzing SSL & cryptographic protocols...", "Crawling DOM for GDPR compliance...", "Running semantic vulnerability checks...", "Calculating Final Trust Score..."];
     if (scanMode === "seo") return ["Initiating FajaedeAI SEO Crawler...", "Analyzing Core Web Vitals & LCP...", "Checking Dynamic Schema & AI endpoints...", "Evaluating keyword density...", "Compiling critical issue report..."];
-    return ["Initiating GEO-Spatial Engine...", "Locating Google Maps coordinates...", "Analyzing NAP consistency...", "Evaluating local domain authority...", "Generating Market Overview..."];
+    return ["Initiating local visibility audit...", "Checking business identity signals...", "Reviewing AI crawler access...", "Inspecting structured data and answer formats...", "Compiling GEO readiness findings..."];
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -261,7 +278,7 @@ export default function Home() {
         <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#aaa", marginBottom: 32, maxWidth: 700, margin: "0 auto 32px auto", lineHeight: 1.5 }}>
           {scanMode === "psa" && "FajaedeAI Core analyzes your website across privacy, security, age compliance, SEO and AI visibility — and turns the results into measurable trust signals."}
           {scanMode === "seo" && "De ultieme SEO Audit Engine voor FajaedeSEO AI klanten. Analyseer direct on-page factoren, backlinks en technische pijnpunten."}
-          {scanMode === "geo" && "Domineer jouw lokale markt. Check live je Google Maps posities en lokale autoriteit voor specifieke zoekwoorden en regio's."}
+          {scanMode === "geo" && "Controleer lokale bedrijfssignalen en technische AI-crawlbaarheid. Deze scan meet geen live Google Maps-posities of daadwerkelijke AI-citaties."}
         </p>
 
         {/* Multi-Tool Tab Switcher */}
@@ -273,7 +290,7 @@ export default function Home() {
               <span className="tabIcon" aria-hidden="true">📈</span><span className="tabBtnContent"><span className="tabBtnLabel">SEO Audit</span><span className="tabBtnDescription">Technische SEO, content en prestaties</span></span>
             </button>
             <button className="tabBtn" onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
-              <span className="tabIcon" aria-hidden="true">🌍</span><span className="tabBtnContent"><span className="tabBtnLabel">GEO Local</span><span className="tabBtnDescription">Lokale vindbaarheid en Google Maps</span></span>
+              <span className="tabIcon" aria-hidden="true">🌍</span><span className="tabBtnContent"><span className="tabBtnLabel">GEO Local</span><span className="tabBtnDescription">Lokale signalen en AI-crawlbaarheid</span></span>
             </button>
         </div>
       </section>
@@ -443,6 +460,7 @@ export default function Home() {
             {result.scanMode === "seo" ? "SEO & Privacy Audit Report" : "GEO Local Audit Report"}
           </h2>
           <p style={{ color: "#aaa", margin: 0, fontSize: 16 }}>Geanalyseerd domein: <strong style={{ color: "#fff" }}>{result.url}</strong></p>
+          {result.urlReputation && <UrlReputationNotice reputation={result.urlReputation} />}
 
           {/* CACHE & PREMIUM UPSELL BANNER ("The Big Boy Way") */}
           {result.fromCache && (
@@ -545,14 +563,43 @@ export default function Home() {
           {/* THE 3D GLOBE / GEO RADAR EFFECT (Alleen voor GEO Scans) */}
           {result.scanMode === "geo" && (
             <div style={{ position: "relative", width: "100%", height: 200, display: "flex", justifyContent: "center", alignItems: "center", overflow: "hidden", borderRadius: 12, background: "#020813", border: "1px solid #003366", marginBottom: 24, boxShadow: "inset 0 0 40px rgba(0,170,255,0.2)" }}>
-              {/* CSS Animated Grid/Radar for "AI Citation Platform" feel */}
+              {/* Decorative radar for the local and AI-readiness audit. */}
               <div style={{ position: "absolute", width: 400, height: 400, background: "conic-gradient(from 0deg, transparent 70%, rgba(0, 170, 255, 0.6) 100%)", borderRadius: "50%", animation: "spin 3s linear infinite" }}></div>
               <div style={{ position: "absolute", width: "100%", height: "100%", background: "repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,170,255,0.15) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,170,255,0.15) 20px)" }}></div>
               <div style={{ zIndex: 2, background: "rgba(0,0,0,0.8)", padding: "10px 24px", borderRadius: 999, border: "1px solid #00aaff", color: "#00aaff", fontSize: 15, fontWeight: 900, backdropFilter: "blur(4px)", textTransform: "uppercase", letterSpacing: 1, boxShadow: "0 0 20px rgba(0,170,255,0.4)" }}>
-                🌍 AI Global Citation Network Active
+                GEO & AI-readiness scan
               </div>
               <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { 100% { transform: rotate(360deg); } }` }} />
             </div>
+          )}
+
+          {result.scanMode === "geo" && result.generativeVisibility && (
+            <section style={{ background: "#080808", border: "1px solid #29415b", borderRadius: 12, padding: 24, textAlign: "left" }}>
+              <h3 style={{ color: "#fff", margin: "0 0 8px", fontSize: 18 }}>AI-zoekvindbaarheid: technische voorbereiding</h3>
+              <p style={{ color: "#aaa", margin: "0 0 18px", fontSize: 13, lineHeight: 1.5 }}>
+                Dit controleert of pagina-inhoud technisch begrijpelijk en toegankelijk is voor AI-systemen. Het controleert geen daadwerkelijke antwoorden of citaties in ChatGPT, Perplexity of Google AI Overviews.
+              </p>
+              <div style={{ display: "grid", gap: 10 }}>
+                {result.generativeVisibility.checks.map((check) => {
+                  const statusColor = check.status === "pass" ? "#77e6aa" : check.status === "warning" ? "#ffd166" : "#aaa";
+                  const statusLabel = check.status === "pass" ? "In orde" : check.status === "warning" ? "Aandachtspunt" : check.status === "unknown" ? "Niet bevestigd" : "Niet gemeten";
+                  return (
+                    <div key={check.code} style={{ display: "grid", gridTemplateColumns: "minmax(140px, 0.8fr) minmax(0, 2fr)", gap: 12, padding: "10px 0", borderTop: "1px solid #222" }}>
+                      <div>
+                        <strong style={{ color: "#eee", fontSize: 13 }}>{check.label}</strong>
+                        <div style={{ color: statusColor, fontSize: 12, marginTop: 3 }}>{statusLabel}</div>
+                      </div>
+                      <p style={{ color: "#aaa", fontSize: 13, lineHeight: 1.45, margin: 0 }}>{check.details}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              {result.generativeVisibility.limitations.length > 0 && (
+                <p style={{ color: "#777", fontSize: 12, lineHeight: 1.5, margin: "14px 0 0" }}>
+                  {result.generativeVisibility.limitations.join(" ")}
+                </p>
+              )}
+            </section>
           )}
 
           {/* Pijnpunten / Issues benadrukken */}
@@ -626,6 +673,7 @@ export default function Home() {
               </div>
             </div>
           </div>
+          {result.urlReputation && <UrlReputationNotice reputation={result.urlReputation} />}
           
           <div style={{ display: "grid", gridTemplateColumns: isSmallScreen ? "1fr" : "repeat(3, minmax(0px, 1fr))", gap: 12, marginTop: 4 }}>
             <ScoreBox label="Privacy" score={result.privacy?.score || "N/A"} note={result.privacy?.note || "Geen data"} />
@@ -698,6 +746,24 @@ function ScoreBox({
         {score}
       </div>
       <div style={{ fontSize: 12, color: "#ddd" }}>{note}</div>
+    </div>
+  );
+}
+
+function UrlReputationNotice({ reputation }: { reputation: NonNullable<ScanResult["urlReputation"]> }) {
+  const isSafe = reputation.status === "safe";
+  const checked = reputation.reason === "checked";
+  const color = isSafe ? "#77e6aa" : checked ? "#ff9b9b" : "#ffd166";
+  const message = isSafe
+    ? "Geen bekende phishing- of malwarematch gevonden door Google Web Risk."
+    : reputation.reason === "not-configured"
+      ? "URL-reputatie niet gecontroleerd; Web Risk is niet geconfigureerd."
+      : "URL-reputatie kon niet worden gecontroleerd; de scan is niet als veilig bevestigd.";
+
+  return (
+    <div role="status" style={{ padding: "10px 12px", borderRadius: 8, border: `1px solid ${color}`, color, background: "rgba(0,0,0,0.2)", fontSize: 13 }}>
+      <strong>Phishing/malware check:</strong> {message}
+      {reputation.threatTypes.length > 0 && <span> Detectie: {reputation.threatTypes.join(", ")}.</span>}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import { VatCheckout } from "@/components/VatCheckout";
 
 type ReportData = {
   url: string;
@@ -223,20 +224,24 @@ export default function ReportClient({ report }: { report: ReportData }) {
               
               {/* DE GATEKEEPER LOGICA */}
               {trustScore >= 75 ? (
-                <form action="/api/checkout" method="GET" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-                  <input type="hidden" name="urlHash" value={report.urlHash || ""} />
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
                   <div style={{ width: "100%", maxWidth: 320, textAlign: "left" }}>
                     <label style={{ fontSize: 13, color: "#ccc", fontWeight: 600, display: "block", marginBottom: 8 }}>E-mailadres voor factuur & licentie:</label>
                     <input 
-                      type="email" name="email" required placeholder="naam@bedrijf.nl" 
+                      type="email" required placeholder="naam@bedrijf.be"
                       value={email} onChange={e => setEmail(e.target.value)}
                       style={{ width: "100%", boxSizing: "border-box", padding: "12px 16px", borderRadius: 8, border: "1px solid #444", background: "#050505", color: "#fff", outline: "none" }}
                     />
                   </div>
-                  <button type="submit" style={{ display: "inline-block", textDecoration: "none", padding: "14px 32px", background: "#0070ba", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", fontSize: 15, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,112,186,0.3)" }}>
-                    Koop PSA Licentie (€9/jaar)
-                  </button>
-                </form>
+                  <VatCheckout
+                    product="PSA_LICENSE"
+                    paymentEndpoint="/api/checkout"
+                    paymentData={{ urlHash: report.urlHash || "", email: email.trim() }}
+                    buttonLabel="Bereken btw en totaal"
+                    disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !report.urlHash}
+                  />
+                  <p style={{ color: "#888", fontSize: 12, margin: 0 }}>€9 per jaar, inclusief btw.</p>
+                </div>
               ) : (
                 <div style={{ padding: "16px", background: "rgba(255, 77, 79, 0.1)", border: "1px solid rgba(255, 77, 79, 0.3)", borderRadius: 8, color: "#ffcccc", textAlign: "center" }}>
                   <h4 style={{ color: "#ff4d4f", margin: "0 0 8px 0" }}>⚠️ Score te laag voor certificering</h4>

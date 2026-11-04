@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
+import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "@/lib/scan-guard";
 import { getGeoBenchmark } from "@/lib/scan-benchmark";
 import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
+import { getGenerativeVisibility } from "@/lib/generative-visibility";
+import { checkUrlReputation } from "@/lib/url-reputation";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const retryAfter = checkScanRateLimit(request);
+    let retryAfter: number | null;
+    try {
+      retryAfter = await checkScanRateLimit(request);
+    } catch {
+      return NextResponse.json({ error: "Scanservice tijdelijk niet beschikbaar." }, { status: 503 });
+    }
     if (retryAfter !== null) {
       return NextResponse.json({ error: "Te veel scans aangevraagd. Probeer het later opnieuw." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
     }
@@ -20,6 +27,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const urlError = await validatePublicScanUrl(url);
     if (urlError) return NextResponse.json({ error: urlError }, { status: 400 });
+    const urlReputation = await checkUrlReputation(url);
+    if (urlReputation.status === "unsafe") {
+      return NextResponse.json({ error: "Deze website staat op een phishing- of malwareblokkeerlijst.", urlReputation }, { status: 403 });
+    }
 
     const cleanUrl = url.toLowerCase().replace(/\/$/, "");
 
@@ -34,7 +45,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     if (cachedScan) {
-      const liveScoring = await getLiveSeoGeoScore(cleanUrl, "geo");
+      const [liveScoring, generativeVisibility] = await Promise.all([
+        getLiveSeoGeoScore(cleanUrl, "geo"),
+        getGenerativeVisibility(cleanUrl),
+      ]);
       const trustScore = liveScoring?.score ?? cachedScan.trustScore;
       if (liveScoring) {
         try {
@@ -51,6 +65,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         benchmark: await getGeoBenchmark(trustScore),
         scoreSource: liveScoring ? "live" : "stored-fallback",
         liveScoring,
+        generativeVisibility,
+        urlReputation,
         fromCache: true,
         cachedAt: cachedScan.createdAt.toISOString(),
       });
@@ -58,34 +74,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const liveScoringPromise = getLiveSeoGeoScore(cleanUrl, "geo");
     const startTime = Date.now();
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(8500), // Voorkom 502 Bad Gateway door Vercel timeout
-      headers: { 
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": "\"Windows\"",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1"
-      },
-    });
+    const res = await fetchPublicResource(url, { timeoutMs: 8500, maxBytes: 1_500_000 });
     const fetchTime = Date.now() - startTime;
 
-    if (!res.ok) {
+    if (res.status < 200 || res.status >= 300) {
       if (res.status === 403 || res.status === 503) {
         return NextResponse.json({ error: "Scan geblokkeerd: Deze website gebruikt een strikte firewall (zoals Cloudflare) die automatische scans weigert." }, { status: 403 });
       }
       throw new Error("Could not fetch URL");
     }
 
-    const html = await res.text();
+    const html = res.text;
     const lowerHtml = html.toLowerCase();
+    const generativeVisibilityPromise = getGenerativeVisibility(cleanUrl, html);
 
     let score = 100;
     const issues: string[] = [];
@@ -139,7 +140,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       issues.push(`Trage server response (${fetchTime}ms). Lokale mobiele zoekers (on-the-go) verlaten trage websites direct.`);
     }
 
-    const liveScoring = await liveScoringPromise;
+    const [liveScoring, generativeVisibility] = await Promise.all([
+      liveScoringPromise,
+      generativeVisibilityPromise,
+    ]);
     const responseData = {
       trustScore: liveScoring?.score ?? Math.max(12, score), // Keep the existing local score as a fallback.
       criticalIssues: issues.length > 0 ? issues : ["Geen kritieke fouten. Je lokale SEO basis staat als een huis!"],
@@ -152,12 +156,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         update: {
           trustScore: responseData.trustScore,
           criticalIssues: responseData.criticalIssues,
+          checks: generativeVisibility.checks,
           createdAt: new Date(),
         },
         create: {
           url: cleanUrl,
           trustScore: responseData.trustScore,
           criticalIssues: responseData.criticalIssues,
+          checks: generativeVisibility.checks,
         }
       });
     } catch (error) {
@@ -171,6 +177,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         : responseData.criticalIssues,
       scoreSource: liveScoring ? "live" : "local-fallback",
       liveScoring,
+      generativeVisibility,
+      urlReputation,
       benchmark: await getGeoBenchmark(responseData.trustScore),
     });
   } catch (e: unknown) {

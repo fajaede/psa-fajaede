@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getMollieApiKey } from "@/lib/mollie";
 
 export async function GET(request: Request) {
   const orderId = new URL(request.url).searchParams.get("orderId");
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   }
 
   let status = order.status;
-  const apiKey = process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
+  const apiKey = getMollieApiKey();
 
   if (apiKey && order.paymentId !== "pending" && status !== "paid") {
     try {

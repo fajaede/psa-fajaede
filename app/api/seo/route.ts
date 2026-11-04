@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
+import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "@/lib/scan-guard";
 import { getSeoBenchmark } from "@/lib/scan-benchmark";
 import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
+import { checkUrlReputation } from "@/lib/url-reputation";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const retryAfter = checkScanRateLimit(request);
+    let retryAfter: number | null;
+    try {
+      retryAfter = await checkScanRateLimit(request);
+    } catch {
+      return NextResponse.json({ error: "Scanservice tijdelijk niet beschikbaar." }, { status: 503 });
+    }
     if (retryAfter !== null) {
       return NextResponse.json({ error: "Te veel scans aangevraagd. Probeer het later opnieuw." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
     }
@@ -20,6 +26,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const urlError = await validatePublicScanUrl(url);
     if (urlError) return NextResponse.json({ error: urlError }, { status: 400 });
+    const urlReputation = await checkUrlReputation(url);
+    if (urlReputation.status === "unsafe") {
+      return NextResponse.json({ error: "Deze website staat op een phishing- of malwareblokkeerlijst.", urlReputation }, { status: 403 });
+    }
 
     const cleanUrl = url.toLowerCase().replace(/\/$/, "");
 
@@ -51,6 +61,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         benchmark: await getSeoBenchmark(trustScore),
         scoreSource: liveScoring ? "live" : "stored-fallback",
         liveScoring,
+        urlReputation,
         fromCache: true,
         cachedAt: cachedScan.createdAt.toISOString(),
       });
@@ -58,33 +69,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const liveScoringPromise = getLiveSeoGeoScore(cleanUrl, "seo");
     const startTime = Date.now();
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(8500), // Voorkom 502 Bad Gateway door Vercel timeout
-      headers: { 
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": "\"Windows\"",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1"
-      },
-    });
+    const res = await fetchPublicResource(url, { timeoutMs: 8500, maxBytes: 1_500_000 });
     const fetchTime = Date.now() - startTime;
 
-    if (!res.ok) {
+    if (res.status < 200 || res.status >= 300) {
       if (res.status === 403 || res.status === 503) {
         return NextResponse.json({ error: "Scan geblokkeerd: Deze website gebruikt een strikte firewall (zoals Cloudflare) die automatische scans weigert." }, { status: 403 });
       }
       throw new Error("Could not fetch URL");
     }
 
-    const html = await res.text();
+    const html = res.text;
     const lowerHtml = html.toLowerCase();
 
     let score = 100;
@@ -197,8 +192,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // robots.txt check
     try {
-      const robotsRes = await fetch(`${url.replace(/\/[^/]*$/, '')}/robots.txt`);
-      if (robotsRes.ok) {
+      const robotsRes = await fetchPublicResource(new URL("/robots.txt", res.url).toString(), {
+        timeoutMs: 2500,
+        maxBytes: 100_000,
+      });
+      if (robotsRes.status >= 200 && robotsRes.status < 400) {
         checks.push({ name: 'robots.txt exists', passed: true, score: 100, message: 'Found robots.txt' });
       } else {
         checks.push({ name: 'robots.txt exists', passed: false, score: 0, message: 'Missing robots.txt' });
@@ -209,8 +207,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // sitemap.xml check
     try {
-      const sitemapRes = await fetch(`${url.replace(/\/[^/]*$/, '')}/sitemap.xml`);
-      if (sitemapRes.ok) {
+      const sitemapRes = await fetchPublicResource(new URL("/sitemap.xml", res.url).toString(), {
+        timeoutMs: 2500,
+        maxBytes: 100_000,
+      });
+      if (sitemapRes.status >= 200 && sitemapRes.status < 400) {
         checks.push({ name: 'sitemap.xml exists', passed: true, score: 100, message: 'Found sitemap.xml' });
       } else {
         checks.push({ name: 'sitemap.xml exists', passed: false, score: 0, message: 'Missing sitemap.xml' });
@@ -228,25 +229,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     checks.push({ name: 'Duplicate title tags', passed: titleOccurrences <= 1, score: titleOccurrences <= 1 ? 100 : 0, message: `${titleOccurrences} title tags found` });
 
     // broken links check (simple regex for href)
-    const linkHrefs = html.match(/href\s*=\s*"([^\"]*)"/gi) || [];
-    let brokenCount = 0;
-    for (const link of linkHrefs) {
-      const urlMatch = link.match(/href\s*=\s*"([^\"]*)"/i);
-      if (urlMatch && urlMatch[1]) {
-        const linkUrl = urlMatch[1];
-        if (!linkUrl.startsWith('http')) continue; // ignore relative
+    const linkHrefs = [...new Set((html.match(/href\s*=\s*"([^\"]*)"/gi) || [])
+      .map((link) => link.match(/href\s*=\s*"([^\"]*)"/i)?.[1])
+      .filter((href): href is string => Boolean(href))
+      .map((href) => {
         try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 3000);
-          const resLink = await fetch(linkUrl, { method: 'HEAD', signal: controller.signal });
-          clearTimeout(timer);
-          if (!resLink.ok) brokenCount++;
-        } catch (e) {
-          brokenCount++;
+          const parsed = new URL(href, res.url);
+          return ["http:", "https:"].includes(parsed.protocol) ? parsed.toString() : null;
+        } catch {
+          return null;
         }
+      })
+      .filter((href): href is string => href !== null))];
+    const linksToCheck = linkHrefs.slice(0, 12);
+    const linkResults = await Promise.all(linksToCheck.map(async (linkUrl) => {
+      try {
+        const linkResponse = await fetchPublicResource(linkUrl, { method: "HEAD", timeoutMs: 2000, maxBytes: 0 });
+        return linkResponse.status < 200 || linkResponse.status >= 400;
+      } catch {
+        return true;
       }
-    }
-    checks.push({ name: 'Broken links', passed: brokenCount === 0, score: brokenCount === 0 ? 100 : Math.max(0, 100 - brokenCount * 5), message: `${brokenCount} broken links detected` });
+    }));
+    const brokenCount = linkResults.filter(Boolean).length;
+    checks.push({
+      name: 'Broken links',
+      passed: brokenCount === 0,
+      score: brokenCount === 0 ? 100 : Math.max(0, 100 - brokenCount * 5),
+      message: `${brokenCount} broken links among ${linksToCheck.length} checked (${linkHrefs.length} discovered; max 12 checked).`,
+    });
 
     // keyword density placeholder (check for word "privacy")
     const keyword = 'privacy';
@@ -279,6 +289,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         : responseData.criticalIssues,
       scoreSource: liveScoring ? "live" : "local-fallback",
       liveScoring,
+      urlReputation,
       benchmark: await getSeoBenchmark(responseData.trustScore),
     });
   } catch (e: unknown) {

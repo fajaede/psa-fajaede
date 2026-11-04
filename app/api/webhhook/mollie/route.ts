@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createMollieClient } from "@mollie/api-client";
 import { prisma } from "@/lib/prisma";
+import { getMollieApiKey } from "@/lib/mollie";
 
 export async function POST(request: NextRequest) {
-  if (!process.env.MOLLIE_API_KEY) {
+  const apiKey = getMollieApiKey();
+  if (!apiKey) {
     return new NextResponse("Mollie API key missing", { status: 500 });
   }
 
-  const mollieClient = createMollieClient({ apiKey: process.env.MOLLIE_API_KEY });
+  const mollieClient = createMollieClient({ apiKey });
 
   try {
     // Mollie stuurt de data als Form Data

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-const mollieApiKey = () => process.env.MOLLIE_API_KEY || process.env.MOLLIE_TEST_KEY;
+import { getMollieApiKey } from "@/lib/mollie";
 
 export async function GET() {
   return NextResponse.json({ status: "ok" });
@@ -25,7 +24,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing Mollie payment id" }, { status: 400 });
     }
 
-    const apiKey = mollieApiKey();
+    const apiKey = getMollieApiKey();
     if (!apiKey) {
       return NextResponse.json({ error: "Mollie API key missing" }, { status: 500 });
     }
@@ -42,6 +41,7 @@ export async function POST(request: Request) {
     const payment = await mollieResponse.json();
     const status = typeof payment?.status === "string" ? payment.status : "unknown";
     const orderId = payment?.metadata?.orderId;
+    const urlHash = payment?.metadata?.urlHash;
 
     await prisma.webhookEvent.create({
       data: { type: "payment.updated", payload: payment },
@@ -59,6 +59,11 @@ export async function POST(request: Request) {
       if (status === "paid" && order.scanUrl && order.scanMode === "geo") {
         await prisma.geoScan.updateMany({ where: { url: order.scanUrl }, data: { isPaid: true } });
       }
+    } else if (typeof urlHash === "string" && status === "paid") {
+      await prisma.psaScan.update({
+        where: { urlHash },
+        data: { isPaid: true },
+      });
     } else {
       await prisma.premiumOrder.updateMany({
         where: { paymentId },

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildReportPath, buildVerifyPath, generateReportId, normalizeReportId } from "@/lib/report-id";
-import { checkScanRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
+import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "@/lib/scan-guard";
+import { checkUrlReputation } from "@/lib/url-reputation";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const retryAfter = checkScanRateLimit(request);
+    let retryAfter: number | null;
+    try {
+      retryAfter = await checkScanRateLimit(request);
+    } catch {
+      return NextResponse.json({ error: "Scanservice tijdelijk niet beschikbaar." }, { status: 503 });
+    }
     if (retryAfter !== null) {
       return NextResponse.json({ error: "Te veel scans aangevraagd. Probeer het later opnieuw." }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
     }
@@ -22,27 +28,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const urlError = await validatePublicScanUrl(url);
     if (urlError) return NextResponse.json({ error: urlError }, { status: 400 });
+    const urlReputation = await checkUrlReputation(url);
+    if (urlReputation.status === "unsafe") {
+      return NextResponse.json({ error: "Deze website staat op een phishing- of malwareblokkeerlijst.", urlReputation }, { status: 403 });
+    }
 
-    const resp = await fetch(url, {
-      method: "GET",
-      signal: AbortSignal.timeout(8500), // Vercel timeout is 10s, we stoppen na 8.5s netjes
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Sec-Ch-Ua": "\"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"",
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": "\"Windows\"",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1"
-      },
-    });
+    const resp = await fetchPublicResource(url, { timeoutMs: 8500, maxBytes: 1_500_000 });
 
-    if (!resp.ok) {
+    if (resp.status < 200 || resp.status >= 300) {
       if (resp.status === 525) {
         return NextResponse.json(
           { error: "Cloudflare meldt status 525: de TLS-handshake tussen Cloudflare en de originserver van deze website mislukt. Controleer het origin-certificaat en de SSL/TLS-modus; dit is een configuratieprobleem aan de website." },
@@ -61,7 +54,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const html = await resp.text();
+    const html = resp.text;
     const lower = html.toLowerCase();
 
     const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
@@ -176,6 +169,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       age: { score: ageScore, note: ageNote },
       reportUrl: buildReportPath(urlHash),
       verifyUrl: buildVerifyPath(urlHash),
+      urlReputation,
       expiresAt: expiresAt.toISOString(),
       fromCache: false,
     });

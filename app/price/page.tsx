@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { VatCheckout } from "@/components/VatCheckout";
 
 const tiers = [
   {
@@ -30,43 +31,16 @@ const tiers = [
 
 export default function PricePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [scanMode, setScanMode] = useState<"seo" | "geo" | null>(null);
   const [scanUrl, setScanUrl] = useState("");
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     setScanMode(searchParams.get("mode") === "geo" ? "geo" : searchParams.get("mode") === "seo" ? "seo" : null);
     setScanUrl(searchParams.get("url") || "");
   }, []);
-
-  const handleUpgrade = async (tierKey: string) => {
-    if (tierKey === "FREE") {
-      router.push("/");
-      return;
-    }
-    if (!email.trim()) {
-      alert("Vul eerst uw e-mailadres in.");
-      return;
-    }
-    setLoading(tierKey);
-    try {
-      const res = await fetch("/api/premium/create-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tierKey, email: email.trim(), scanMode, scanUrl }),
-      });
-      if (!res.ok) throw new Error("Payment creation failed");
-      const { checkoutUrl } = await res.json();
-      window.location.href = checkoutUrl; // redirect to Mollie checkout
-    } catch (e) {
-      console.error(e);
-      alert("Er is een fout opgetreden bij het starten van de betaling.");
-    } finally {
-      setLoading(null);
-    }
-  };
 
   return (
     <main style={styles.container}>
@@ -88,18 +62,34 @@ export default function PricePage() {
         {tiers.map((t) => (
           <div key={t.tierKey} style={styles.card}>
             <h2 style={styles.cardTitle}>{t.name}</h2>
-            {t.price > 0 && <p style={styles.price}>€{t.price}</p>}
+            {t.price > 0 && <p style={styles.price}>€{t.price} <span style={styles.vatNote}>incl. btw</span></p>}
             <p style={styles.desc}>{t.description}</p>
             <button
-              style={styles.button}
-              disabled={loading === t.tierKey}
-              onClick={() => handleUpgrade(t.tierKey)}
+              style={selectedTier === t.tierKey ? { ...styles.button, ...styles.selectedButton } : styles.button}
+              onClick={() => t.tierKey === "FREE" ? router.push("/") : setSelectedTier(t.tierKey)}
             >
-              {loading === t.tierKey ? "Redirecting…" : t.button}
+              {t.tierKey === "FREE" ? t.button : selectedTier === t.tierKey ? "Geselecteerd" : "Selecteer pakket"}
             </button>
           </div>
         ))}
       </section>
+      {selectedTier && (
+        <section style={styles.checkout}>
+          <h2 style={styles.cardTitle}>Factuurgegevens</h2>
+          <p style={styles.desc}>De pakketprijs is inclusief btw. Het exacte btw-bedrag hangt af van je land en klanttype.</p>
+          <VatCheckout
+            product={selectedTier}
+            paymentEndpoint="/api/premium/create-payment"
+            paymentData={{
+              tier: selectedTier,
+              email: email.trim(),
+              ...(scanMode && scanUrl ? { scanMode, scanUrl } : {}),
+            }}
+            buttonLabel="Bereken btw en totaal"
+            disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}
+          />
+        </section>
+      )}
     </main>
   );
 }
@@ -148,6 +138,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardTitle: { fontSize: 20, marginBottom: 8 },
   price: { fontSize: 28, fontWeight: 600, margin: "12px 0" },
+  vatNote: { fontSize: 13, fontWeight: 400, color: "#aaa" },
   desc: { fontSize: 14, marginBottom: 16, color: "#ccc" },
   button: {
     background: "#00ff99",
@@ -158,4 +149,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontWeight: 600,
   },
+  selectedButton: { background: "#fff", color: "#111" },
+  checkout: { width: "100%", maxWidth: 620, marginTop: 32, padding: 24, border: "1px solid #333", borderRadius: 8, background: "#101010" },
 };

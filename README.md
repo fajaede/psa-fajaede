@@ -18,6 +18,16 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Security rollout
+
+The API scan limiter is shared through PostgreSQL. Before deploying the new scan routes, apply the additive migration once against the intended database:
+
+```bash
+npm run prisma:migrate:deploy
+```
+
+Set `DATABASE_URL`, a stable random `RATE_LIMIT_HASH_SECRET`, and `GOOGLE_WEB_RISK_API_KEY` in the server environment. Enable the Google Web Risk Lookup API and restrict the key to that API. Keep secrets server-only; never use `NEXT_PUBLIC_*` or commit them. Without a Web Risk key, URL reputation is reported as unknown, not safe. The build intentionally does not modify the database.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
