@@ -9,7 +9,7 @@ export function getPsaAppUrl(requestUrl: string): string {
   return baseUrl.replace(/\/+$/, "");
 }
 
+// PSA handles its own Mollie webhooks; it no longer routes through WordPress.
 export function getMollieWebhookUrl(baseUrl: string): string {
-  const configuredUrl = process.env.MOLLIE_WEBHOOK_URL?.trim();
-  return (configuredUrl || `${baseUrl}/api/premium/webhook`).replace(/\/+$/, "");
+  return `${baseUrl}/api/premium/webhook`;
 }
