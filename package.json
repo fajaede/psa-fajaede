@@ -7,7 +7,8 @@
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./prisma/schema.prisma",
-    "build": "npm run prisma:generate && next build --webpack",
+    "db:repair": "prisma db execute --file prisma/repair-production.sql",
+    "build": "npm run db:repair && npm run prisma:generate && next build --webpack",
     "start": "next start"
   },
   "dependencies": {

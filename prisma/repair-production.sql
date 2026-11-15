@@ -23,10 +23,17 @@ CREATE TABLE IF NOT EXISTS "GeoScan" (
 CREATE UNIQUE INDEX IF NOT EXISTS "SeoScan_url_key" ON "SeoScan"("url");
 CREATE UNIQUE INDEX IF NOT EXISTS "GeoScan_url_key" ON "GeoScan"("url");
 
+DO $$
+BEGIN
+  CREATE TYPE "Tier" AS ENUM ('RE_SCAN', 'RE_SCAN_ADV');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS "PremiumOrder" (
   "id" TEXT NOT NULL PRIMARY KEY,
   "email" TEXT NOT NULL,
-  "tier" TEXT NOT NULL,
+  "tier" "Tier" NOT NULL,
   "paymentId" TEXT NOT NULL,
   "priceCents" INTEGER NOT NULL,
   "status" TEXT NOT NULL DEFAULT 'pending',
@@ -35,8 +42,21 @@ CREATE TABLE IF NOT EXISTS "PremiumOrder" (
 
 ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "scanUrl" TEXT;
 ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "scanMode" TEXT;
+ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'pending';
 ALTER TABLE "PsaScan" ADD COLUMN IF NOT EXISTS "taxDetails" JSONB;
 ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "taxDetails" JSONB;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'PremiumOrder' AND column_name = 'tier' AND data_type <> 'USER-DEFINED'
+  ) THEN
+    ALTER TABLE "PremiumOrder"
+      ALTER COLUMN "tier" TYPE "Tier"
+      USING "tier"::"Tier";
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "WebhookEvent" (
   "id" TEXT NOT NULL PRIMARY KEY,
