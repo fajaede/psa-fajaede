@@ -76,7 +76,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     expiresAt: report.expiresAt ? report.expiresAt.toISOString() : null,
     isPaid: report.isPaid || false,
     benchmark,
-    badgeBaseUrl: (process.env.PSA_APP_URL || "").replace(/\/$/, ""),
+    badgeBaseUrl: (process.env.PSA_APP_URL?.trim() || "https://psa.fajaede.nl").replace(/\/+$/, ""),
   };
 
   return <ReportClient report={safeReport} />;

@@ -54,8 +54,10 @@ function formatLocalDate(date: Date): string {
   return formatLocal(date).slice(0, 10);
 }
 
-function asVatDetails(value: Prisma.JsonValue | null): Partial<VatDetails> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Partial<VatDetails>) : null;
+type StoredTaxDetails = Partial<VatDetails> & { companyName?: string; companyAddress?: string };
+
+function asVatDetails(value: Prisma.JsonValue | null): StoredTaxDetails | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as StoredTaxDetails) : null;
 }
 
 type SaleRow = {
@@ -95,8 +97,8 @@ function toRow(sale: SaleRow): string[] {
     "EUR",
     formatLocal(sale.paidAt),
     "Aankoop",
-    cell(sale.email ?? ""),
-    "",
+    cell(isBusiness && tax?.companyName ? tax.companyName : sale.email ?? ""),
+    cell((tax?.companyAddress ?? "").replace(/\s*\r?\n\s*/g, ", ")),
     cell(tax?.vatNumber ?? ""),
     reverseCharge ? "Ja" : "Nee",
   ];

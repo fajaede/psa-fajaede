@@ -5,11 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { validatePublicScanUrl } from "@/lib/scan-guard";
 import { calculateVatInclusiveQuote, VatQuoteError } from "@/lib/vat";
 import { getMollieApiKey } from "@/lib/mollie";
+import { parseBusinessInvoiceDetails } from "@/lib/invoice-details";
 import { getMollieWebhookUrl, getPsaAppUrl } from "@/lib/psa-urls";
 
 export async function POST(request: Request) {
   try {
-    const { tier, email, scanMode, scanUrl, countryCode, customerType, vatNumber } = await request.json();
+    const { tier, email, scanMode, scanUrl, countryCode, customerType, vatNumber, companyName, companyAddress } = await request.json();
     if ((tier !== "RE_SCAN" && tier !== "RE_SCAN_ADV") || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "A valid premium tier and email address are required" }, { status: 400 });
     }
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
       customerType,
       vatNumber,
     });
+    const invoiceDetails = parseBusinessInvoiceDetails(customerType, companyName, companyAddress);
 
     const validScanMode = scanMode === "seo" || scanMode === "geo";
     if (scanMode !== undefined && !validScanMode) {
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
         tier,
         paymentId: "pending",
         priceCents: taxDetails.grossAmountCents,
-        taxDetails: { ...taxDetails },
+        taxDetails: { ...taxDetails, ...invoiceDetails },
         scanUrl: validScanMode ? scanUrl.trim().toLowerCase().replace(/\/$/, "") : null,
         scanMode: validScanMode ? scanMode : null,
       },

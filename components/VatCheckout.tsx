@@ -27,6 +27,8 @@ export function VatCheckout({
   const [countryCode, setCountryCode] = useState("BE");
   const [customerType, setCustomerType] = useState<CustomerType>("consumer");
   const [vatNumber, setVatNumber] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const [quote, setQuote] = useState<{ fingerprint: string; details: VatDetails } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +38,10 @@ export function VatCheckout({
   const euCountry = Object.hasOwn(EU_VAT_RATES_BPS, countryCode);
 
   const handleContinue = async () => {
+    if (customerType === "business" && (companyName.trim().length < 2 || companyAddress.trim().length < 5)) {
+      setError("Vul de bedrijfsnaam en het factuuradres in.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -54,7 +60,13 @@ export function VatCheckout({
       const response = await fetch(paymentEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...paymentData, countryCode, customerType, vatNumber }),
+        body: JSON.stringify({
+          ...paymentData,
+          countryCode,
+          customerType,
+          vatNumber,
+          ...(customerType === "business" ? { companyName, companyAddress } : {}),
+        }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Betaling starten is mislukt.");
@@ -100,6 +112,32 @@ export function VatCheckout({
               style={styles.input}
             />
           </label>
+        )}
+        {customerType === "business" && (
+          <>
+            <label style={styles.label}>
+              Bedrijfsnaam
+              <input
+                autoComplete="organization"
+                value={companyName}
+                onChange={(event) => setCompanyName(event.target.value)}
+                maxLength={200}
+                style={styles.input}
+              />
+            </label>
+            <label style={{ ...styles.label, gridColumn: "1 / -1" }}>
+              Factuuradres
+              <textarea
+                autoComplete="street-address"
+                value={companyAddress}
+                onChange={(event) => setCompanyAddress(event.target.value)}
+                placeholder={"Straat en huisnummer\nPostcode en plaats"}
+                maxLength={500}
+                rows={3}
+                style={{ ...styles.input, resize: "vertical", fontFamily: "inherit" }}
+              />
+            </label>
+          </>
         )}
       </div>
 

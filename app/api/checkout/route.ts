@@ -3,11 +3,12 @@ import { createMollieClient } from "@mollie/api-client";
 import { prisma } from "@/lib/prisma";
 import { calculateVatInclusiveQuote, VatQuoteError } from "@/lib/vat";
 import { getMollieApiKey } from "@/lib/mollie";
+import { parseBusinessInvoiceDetails } from "@/lib/invoice-details";
 import { getMollieWebhookUrl, getPsaAppUrl } from "@/lib/psa-urls";
 
 export async function POST(request: Request) {
   try {
-    const { urlHash, email, countryCode, customerType, vatNumber } = await request.json();
+    const { urlHash, email, countryCode, customerType, vatNumber, companyName, companyAddress } = await request.json();
     if (typeof urlHash !== "string" || !urlHash || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "A report and email address are required." }, { status: 400 });
     }
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
       customerType,
       vatNumber,
     });
+    const invoiceDetails = parseBusinessInvoiceDetails(customerType, companyName, companyAddress);
     const report = await prisma.psaScan.findUnique({ where: { urlHash } });
     if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
     const baseUrl = getPsaAppUrl(request.url);
     await prisma.psaScan.update({
       where: { urlHash },
-      data: { email: email.trim(), taxDetails: { ...taxDetails } },
+      data: { email: email.trim(), taxDetails: { ...taxDetails, ...invoiceDetails } },
     });
 
     const mollieClient = createMollieClient({ apiKey: mollieApiKey });

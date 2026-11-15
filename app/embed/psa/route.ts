@@ -19,13 +19,14 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   const report = await prisma.psaScan.findUnique({
     where: { urlHash: id },
-    select: { url: true, urlHash: true, securityScore: true, privacyScore: true, ageScore: true },
+    select: { url: true, urlHash: true, securityScore: true, privacyScore: true, ageScore: true, isPaid: true },
   });
   if (!report) return new Response("Badge not found", { status: 404 });
 
   const score = trustScore(report);
-  const color = score >= 75 ? "#00d084" : "#ffb347";
-  const label = score >= 75 ? "PSA VERIFIED" : "PSA REVIEW";
+  // Without an active license the badge is shown as unverified.
+  const color = !report.isPaid ? "#8a949e" : score >= 75 ? "#00d084" : "#ffb347";
+  const label = !report.isPaid ? "UNVERIFIED" : score >= 75 ? "PSA VERIFIED" : "PSA REVIEW";
   const host = escapeXml(new URL(report.url).hostname);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="${label} ${score} out of 100"><rect width="140" height="140" rx="12" fill="#101418"/><circle cx="70" cy="53" r="31" fill="none" stroke="${color}" stroke-width="5"/><text x="70" y="64" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="28" font-weight="700">${score}</text><text x="70" y="105" text-anchor="middle" fill="${color}" font-family="Arial,sans-serif" font-size="11" font-weight="700">${label}</text><text x="70" y="121" text-anchor="middle" fill="#aab4bf" font-family="Arial,sans-serif" font-size="9">${host}</text></svg>`;
 

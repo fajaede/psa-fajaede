@@ -34,7 +34,9 @@ export default function ReportClient({ report }: { report: ReportData }) {
 
   const isGold = trustScore >= 90;
   const isSilver = trustScore >= 75 && trustScore < 90;
-  const embedCode = `<iframe src="${report.badgeBaseUrl}/embed/psa?id=${encodeURIComponent(report.urlHash || "")}" width="140" height="140" frameborder="0" scrolling="no" style="border:none; overflow:hidden;"></iframe>`;
+  const badgeId = encodeURIComponent(report.urlHash || "");
+  // A plain link + image: visitors who click the badge land on the PSA report at psa.fajaede.nl.
+  const embedCode = `<a href="${report.badgeBaseUrl}/report/${badgeId}" target="_blank" rel="noopener" title="PSA Trust Badge - bekijk het rapport"><img src="${report.badgeBaseUrl}/embed/psa?id=${badgeId}" width="140" height="140" alt="PSA Trust Badge" style="border:0;"></a>`;
 
   return (
     <main
