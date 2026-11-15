@@ -66,6 +66,31 @@ model PremiumOrder {
   createdAt   DateTime @default(now())
 }
 
+// One row per paid Mollie payment (PSA license or premium order), used for the
+// weekly accounting report. Written by the Mollie webhook.
+model Sale {
+  id          String   @id @default(cuid())
+  paymentId   String   @unique
+  mode        String
+  product     String
+  email       String?
+  amountCents Int
+  taxDetails  Json?
+  paidAt      DateTime
+  createdAt   DateTime @default(now())
+}
+
+// Claims one weekly accounting report per ISO week (Brussels time).
+model AccountingReportRun {
+  id          String   @id @default(cuid())
+  weekKey     String   @unique
+  periodStart DateTime
+  periodEnd   DateTime
+  status      String
+  sales       Int?
+  createdAt   DateTime @default(now())
+}
+
 model WebhookEvent {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())

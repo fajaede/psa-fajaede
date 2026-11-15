@@ -1,6 +1,37 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMollieApiKey } from "@/lib/mollie";
+import type { Prisma } from "@prisma/client";
+
+type MolliePayment = {
+  mode?: unknown;
+  paidAt?: unknown;
+  amount?: { value?: unknown };
+};
+
+// Store each paid payment once (keyed by Mollie id) for the weekly accounting report.
+async function recordSale(
+  payment: MolliePayment,
+  paymentId: string,
+  sale: { product: string; email: string | null; taxDetails: Prisma.JsonValue | null },
+) {
+  const amountCents = Math.round(Number(payment?.amount?.value ?? 0) * 100);
+  const paidAt = typeof payment?.paidAt === "string" ? new Date(payment.paidAt) : new Date();
+  const mode = payment?.mode === "live" ? "live" : "test";
+  await prisma.sale.upsert({
+    where: { paymentId },
+    update: {},
+    create: {
+      paymentId,
+      mode,
+      product: sale.product,
+      email: sale.email,
+      amountCents: Number.isFinite(amountCents) ? amountCents : 0,
+      taxDetails: sale.taxDetails ?? undefined,
+      paidAt: Number.isNaN(paidAt.getTime()) ? new Date() : paidAt,
+    },
+  });
+}
 
 export async function GET() {
   return NextResponse.json({ status: "ok" });
@@ -59,10 +90,23 @@ export async function POST(request: Request) {
       if (status === "paid" && order.scanUrl && order.scanMode === "geo") {
         await prisma.geoScan.updateMany({ where: { url: order.scanUrl }, data: { isPaid: true } });
       }
+      if (status === "paid") {
+        const tierLabel = order.tier === "RE_SCAN_ADV" ? "Re-scan Advanced" : "Re-scan";
+        await recordSale(payment, paymentId, {
+          product: `${tierLabel} ${(order.scanMode ?? "seo").toUpperCase()}`,
+          email: order.email,
+          taxDetails: order.taxDetails,
+        });
+      }
     } else if (typeof urlHash === "string" && status === "paid") {
-      await prisma.psaScan.update({
+      const scan = await prisma.psaScan.update({
         where: { urlHash },
         data: { isPaid: true },
+      });
+      await recordSale(payment, paymentId, {
+        product: `PSA-licentie: ${scan.url}`,
+        email: scan.email,
+        taxDetails: scan.taxDetails,
       });
     } else {
       await prisma.premiumOrder.updateMany({
