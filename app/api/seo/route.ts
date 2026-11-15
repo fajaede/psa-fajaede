@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "@/lib/scan-guard";
+import { verifyTurnstile } from "@/lib/turnstile";
 import { getSeoBenchmark } from "@/lib/scan-benchmark";
 import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
 import { checkUrlReputation } from "@/lib/url-reputation";
@@ -18,6 +19,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const body = await request.json();
+    if (!(await verifyTurnstile(body?.turnstileToken, request))) {
+      return NextResponse.json({ error: "Bevestig eerst dat je een mens bent." }, { status: 403 });
+    }
     const url = body?.url as string | undefined;
 
     if (!url || typeof url !== "string" || !/^https?:\/\//.test(url)) {

@@ -1,17 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { isAdminAuthorization } from "@/lib/admin-auth";
 
-export default async function AdminDashboard({
-  searchParams,
-}: {
-  searchParams: Promise<{ secret?: string }>;
-}) {
-  const params = await searchParams;
-  // Simpele beveiliging: Pas deze code aan naar iets unieks voor jezelf!
-  const SECRET_KEY = "fajaede_admin";
+export const dynamic = "force-dynamic";
 
-  if (params.secret !== SECRET_KEY) {
+async function isAdmin(): Promise<boolean> {
+  return isAdminAuthorization((await headers()).get("authorization"));
+}
+
+export default async function AdminDashboard() {
+  // proxy.ts already asks for Basic auth; checked again here as defence in depth.
+  if (!(await isAdmin())) {
     return (
       <div style={{ padding: "100px 20px", textAlign: "center", color: "#ff4d4f", background: "#050505", minHeight: "100vh", fontFamily: "sans-serif" }}>
         <h1 style={{ fontSize: 48, marginBottom: 16 }}>🔒 Toegang Geweigerd</h1>
@@ -26,7 +27,10 @@ export default async function AdminDashboard({
   // De Next.js Server Action om de betaalstatus te togglen
   async function togglePaidStatus(formData: FormData) {
     "use server";
-    const urlHash = formData.get("urlHash") as string;
+    // Server actions can be invoked from any route, so they must check auth themselves.
+    if (!(await isAdmin())) throw new Error("Unauthorized");
+    const urlHash = formData.get("urlHash");
+    if (typeof urlHash !== "string" || !urlHash) throw new Error("Missing urlHash");
     const currentPaid = formData.get("isPaid") === "true";
     
     await prisma.psaScan.update({

@@ -1,6 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Turnstile, type TurnstileHandle } from "@/components/Turnstile";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 type ScanResult = {
   trustScore?: number;
@@ -59,6 +62,8 @@ export default function Home() {
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = React.useRef<TurnstileHandle>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
   const [isCoreOpen, setIsCoreOpen] = useState(false);
@@ -116,6 +121,11 @@ export default function Home() {
       return;
     }
 
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError("Bevestig eerst dat je een mens bent.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -126,7 +136,7 @@ export default function Home() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: scanUrl }),
+        body: JSON.stringify({ url: scanUrl, turnstileToken }),
       });
 
       if (!res.ok) {
@@ -149,6 +159,7 @@ export default function Home() {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
+      turnstileRef.current?.reset(); // tokens are single-use
     }
   };
 
@@ -331,6 +342,11 @@ export default function Home() {
             <span>{loading ? "Scanning..." : scanMode === "psa" ? "Run free scan" : `Scan ${scanMode.toUpperCase()}`}</span>
           </button>
         </div>
+        {TURNSTILE_SITE_KEY && (
+          <div style={{ marginTop: 12 }}>
+            <Turnstile ref={turnstileRef} siteKey={TURNSTILE_SITE_KEY} onToken={setTurnstileToken} />
+          </div>
+        )}
       </form>
 
       {/* De Live Terminal Animatie */}

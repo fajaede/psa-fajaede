@@ -1,5 +1,6 @@
 // app/dashboard/page.tsx
-import { isOwner } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { isAdminAuthorization } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import React from 'react';
 
@@ -7,7 +8,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
   const { email = '' } = await searchParams;
-  const authorized = isOwner(email);
+  // Owner-only: protected by HTTP Basic auth in proxy.ts, checked again here.
+  const authorized = isAdminAuthorization((await headers()).get('authorization'));
 
   if (!authorized) {
     return (
@@ -20,14 +22,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   // fetch premium orders for this owner (simple list)
   const orders = await prisma.premiumOrder.findMany({
-    where: { email },
+    where: email ? { email } : undefined, // optional ?email= filter
+    take: 500,
     orderBy: { createdAt: 'desc' },
   });
 
   return (
     <main style={styles.container}>
       <h1 style={styles.title}>Owner Dashboard</h1>
-      <p style={styles.paragraph}>Welcome, {email}</p>
+      <p style={styles.paragraph}>{email ? `Orders for ${email}` : 'All premium orders'}</p>
       <section style={styles.section}>
         <h2 style={styles.subTitle}>Premium Orders</h2>
         {orders.length === 0 ? (
@@ -45,12 +48,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </thead>
             <tbody>
               {orders.map((o) => (
-                <tr
-                  key={o.id}
-                  style={styles.tr}
-                  onMouseEnter={(event) => { event.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
-                  onMouseLeave={(event) => { event.currentTarget.style.backgroundColor = 'transparent'; }}
-                >
+                <tr key={o.id} style={styles.tr}>
                   <td style={styles.td}>{o.id}</td>
                   <td style={styles.td}>{o.tier}</td>
                   <td style={styles.td}>{(o.priceCents / 100).toFixed(2)}</td>
