@@ -294,6 +294,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   } catch (e: unknown) {
     console.error("SEO scan error:", e);
+    if (e instanceof Error && e.message.includes("Cloudflare beschermt")) {
+      return NextResponse.json(
+        { error: "Scan geblokkeerd: Deze website gebruikt een Cloudflare-botbescherming die automatische scans blokkeert. Gebruik een browser of zet de botbescherming voor de scanner uit." },
+        { status: 403 }
+      );
+    }
     return NextResponse.json({ error: "SEO scan failed" }, { status: 500 });
   }
 }

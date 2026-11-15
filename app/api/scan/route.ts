@@ -182,7 +182,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let friendlyError = "De scan is mislukt door een onverwachte server fout.";
     let statusCode = 500;
 
-    if (isTimeout) {
+    if (e instanceof Error && e.message.includes("Cloudflare beschermt")) {
+      friendlyError = "Scan geblokkeerd: Deze website gebruikt een Cloudflare-botbescherming die automatische scans blokkeert. Gebruik een browser of zet de botbescherming voor de scanner uit.";
+      statusCode = 403;
+    } else if (isTimeout) {
       friendlyError = "Scan timeout: De website reageert te traag (> 8.5s). Probeer het later nog eens.";
       statusCode = 504;
     } else if (isNotFound) {

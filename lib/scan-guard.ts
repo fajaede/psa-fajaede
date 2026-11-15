@@ -6,6 +6,25 @@ import { prisma } from "@/lib/prisma";
 const WINDOW_SECONDS = 60;
 const MAX_REQUESTS_PER_WINDOW = 12;
 
+const BROWSER_HEADERS = {
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9,nl;q=0.8",
+  "Cache-Control": "no-cache",
+  "Pragma": "no-cache",
+  "Upgrade-Insecure-Requests": "1",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+};
+
+function looksLikeCloudflareChallenge(status: number, headers: Headers, body: string): boolean {
+  const server = headers.get("server")?.toLowerCase() ?? "";
+  const xServer = headers.get("x-server")?.toLowerCase() ?? "";
+  const cfHeader = headers.get("cf-mitigated") ?? "";
+  const bodyText = body.toLowerCase();
+  return status === 403 || status === 503
+    ? server.includes("cloudflare") || xServer.includes("cloudflare") || cfHeader === "1" || /cf-challenge|challenge-page|checking your browser|just a moment|cloudflare/i.test(bodyText)
+    : false;
+}
+
 export class SharedScanRateLimitUnavailableError extends Error {
   constructor() {
     super("Shared scan rate limiter is unavailable.");
@@ -92,7 +111,10 @@ export async function fetchPublicResource(
       method,
       redirect: "manual",
       signal: AbortSignal.timeout(timeoutMs),
-      headers: { Accept: "text/html,application/xhtml+xml,text/plain,application/xml,*/*;q=0.5" },
+      headers: {
+        ...BROWSER_HEADERS,
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      },
     });
 
     if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -133,6 +155,11 @@ export async function fetchPublicResource(
     } finally {
       reader.releaseLock();
     }
+
+    if (looksLikeCloudflareChallenge(response.status, response.headers, text)) {
+      throw new Error("Cloudflare beschermt deze website tegen automatische scans. Gebruik een browser of zet de botbescherming voor de scanner uit.");
+    }
+
     return { status: response.status, url: currentUrl, headers: response.headers, text };
   }
 
