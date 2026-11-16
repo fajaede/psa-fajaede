@@ -1,7 +1,39 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMollieApiKey } from "@/lib/mollie";
+import { issueInvoice, isPeppolInvoice } from "@/lib/invoices";
+import { notifyPeppolInvoice, sendPurchaseConfirmation } from "@/lib/purchase-mail";
 import type { Prisma } from "@prisma/client";
+
+// Invoice once per paid payment; mail the customer (and the owner for Peppol) only the first time.
+// Invoice errors propagate (Mollie retries the webhook); mail errors are logged only.
+async function invoiceAndConfirm(
+  payment: MolliePayment,
+  paymentId: string,
+  sale: { description: string; email: string | null; taxDetails: Prisma.JsonValue | null },
+) {
+  const { invoice, created } = await issueInvoice({
+    paymentId,
+    mode: payment?.mode === "live" ? "live" : "test",
+    description: sale.description,
+    email: sale.email,
+    taxDetails: sale.taxDetails,
+    paidAmountCents: Math.round(Number(payment?.amount?.value ?? 0) * 100),
+  });
+  if (!created) return;
+  try {
+    await sendPurchaseConfirmation(invoice);
+  } catch (error) {
+    console.error("Purchase confirmation mail failed:", error);
+  }
+  if (isPeppolInvoice(invoice)) {
+    try {
+      await notifyPeppolInvoice(invoice);
+    } catch (error) {
+      console.error("Peppol invoice notification failed:", error);
+    }
+  }
+}
 
 type MolliePayment = {
   mode?: unknown;
@@ -106,8 +138,14 @@ export async function POST(request: Request) {
       }
       if (status === "paid") {
         const tierLabel = order.tier === "RE_SCAN_ADV" ? "Re-scan Advanced" : "Re-scan";
+        const product = `${tierLabel} ${(order.scanMode ?? "seo").toUpperCase()}`;
         await recordSale(payment, paymentId, {
-          product: `${tierLabel} ${(order.scanMode ?? "seo").toUpperCase()}`,
+          product,
+          email: order.email,
+          taxDetails: order.taxDetails,
+        });
+        await invoiceAndConfirm(payment, paymentId, {
+          description: `FajaedeAI ${product}${order.scanUrl ? ` voor ${order.scanUrl}` : ""}`,
           email: order.email,
           taxDetails: order.taxDetails,
         });
@@ -119,6 +157,11 @@ export async function POST(request: Request) {
       });
       await recordSale(payment, paymentId, {
         product: `PSA-licentie: ${scan.url}`,
+        email: scan.email,
+        taxDetails: scan.taxDetails,
+      });
+      await invoiceAndConfirm(payment, paymentId, {
+        description: `FajaedeAI PSA-licentie voor ${scan.url}`,
         email: scan.email,
         taxDetails: scan.taxDetails,
       });

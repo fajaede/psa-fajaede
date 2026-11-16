@@ -1,157 +1,185 @@
-
-
-
-datasource db {
-  provider = "postgresql"
+
+
+
+datasource db {
+  provider = "postgresql"
+}
+generator client {
+  provider = "prisma-client-js"
+}
+model PsaScan {
+  id              Int      @id @default(autoincrement())
+  url             String   @unique
+  urlHash         String   @unique
+  pageTitle       String?
+  privacyScore    String?
+  privacyNote     String?
+  securityScore   String?
+  securityNote    String?
+  ageScore        String?
+  ageNote         String?
+  hasSchema       Boolean  @default(false)
+  hasCookieBanner Boolean  @default(false)
+  email           String?
+  isPaid          Boolean  @default(false)
+  taxDetails      Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  expiresAt       DateTime?
+}
+
+
+model SeoScan {
+  id             String   @id @default(cuid())
+  url            String   @unique
+  trustScore     Int
+  criticalIssues Json @default("[]")
+  checks         Json @default("[]")
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model GeoScan {
+  id             String   @id @default(cuid())
+  url            String   @unique
+  trustScore     Int
+  criticalIssues Json @default("[]")
+  checks         Json @default("[]")
+  isPaid         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+enum Tier {
+  RE_SCAN
+  RE_SCAN_ADV
+}
+
+model PremiumOrder {
+  id          String @id @default(cuid())
+  email       String
+  tier        Tier
+  paymentId   String
+  priceCents  Int
+  scanUrl     String?
+  scanMode    String?
+  status      String @default("pending")
+  taxDetails  Json?
+  createdAt   DateTime @default(now())
+}
+
+// One row per paid Mollie payment (PSA license or premium order), used for the
+// weekly accounting report. Written by the Mollie webhook.
+model Sale {
+  id          String   @id @default(cuid())
+  paymentId   String   @unique
+  mode        String
+  product     String
+  email       String?
+  amountCents Int
+  taxDetails  Json?
+  paidAt      DateTime
+  createdAt   DateTime @default(now())
+}
+
+// Claims one weekly accounting report per ISO week (Brussels time).
+model AccountingReportRun {
+  id          String   @id @default(cuid())
+  weekKey     String   @unique
+  periodStart DateTime
+  periodEnd   DateTime
+  status      String
+  sales       Int?
+  createdAt   DateTime @default(now())
+}
+
+// --- Dashboard accounts (magic-link login) ---
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+  projects  Project[]
+}
+
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  idHash    String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// A site a user follows in the dashboard. url is normalized (lib/url-normalize.ts).
+model Project {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, url])
+}
+
+// One measurement of a site (psa | seo | geo) for score history over time.
+model ScanSnapshot {
+  id        String   @id @default(cuid())
+  url       String
+  kind      String
+  score     Int
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([url, kind, createdAt])
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  type      String
+  payload   Json
+}
+
+model ScanRateLimit {
+  clientHash  String   @id
+  bucketStart DateTime
+  count       Int      @default(0)
 }
-generator client {
-  provider = "prisma-client-js"
-}
-model PsaScan {
-  id              Int      @id @default(autoincrement())
-  url             String   @unique
-  urlHash         String   @unique
-  pageTitle       String?
-  privacyScore    String?
-  privacyNote     String?
-  securityScore   String?
-  securityNote    String?
-  ageScore        String?
-  ageNote         String?
-  hasSchema       Boolean  @default(false)
-  hasCookieBanner Boolean  @default(false)
-  email           String?
-  isPaid          Boolean  @default(false)
-  taxDetails      Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  expiresAt       DateTime?
-}
 
+// One invoice (or Peppol reference) per paid Mollie payment. Numbers form gapless series:
+// PSA-YYYY-NNNN (website invoices), TEST-NNNN (Mollie test mode), PEPPOL-NNNN (Belgian
+// businesses: the legal invoice is sent via Peppol from the accounting software).
+model Invoice {
+  id                 String   @id @default(cuid())
+  paymentId          String   @unique
+  number             String   @unique
+  year               Int
+  seq                Int
+  mode               String
+  description        String
+  customerType       String
+  customerName       String?
+  customerEmail      String?
+  customerAddress    String?
+  customerVat        String?
+  countryCode        String?
+  netCents           Int
+  vatCents           Int
+  grossCents         Int
+  vatRateBasisPoints Int
+  reverseCharge      Boolean  @default(false)
+  treatment          String?
+  createdAt          DateTime @default(now())
 
-model SeoScan {
-  id             String   @id @default(cuid())
-  url            String   @unique
-  trustScore     Int
-  criticalIssues Json @default("[]")
-  checks         Json @default("[]")
-  isPaid         Boolean  @default(false)
-  createdAt      DateTime @default(now())
-}
-
-model GeoScan {
-  id             String   @id @default(cuid())
-  url            String   @unique
-  trustScore     Int
-  criticalIssues Json @default("[]")
-  checks         Json @default("[]")
-  isPaid         Boolean  @default(false)
-  createdAt      DateTime @default(now())
-}
-enum Tier {
-  RE_SCAN
-  RE_SCAN_ADV
-}
-
-model PremiumOrder {
-  id          String @id @default(cuid())
-  email       String
-  tier        Tier
-  paymentId   String
-  priceCents  Int
-  scanUrl     String?
-  scanMode    String?
-  status      String @default("pending")
-  taxDetails  Json?
-  createdAt   DateTime @default(now())
-}
-
-// One row per paid Mollie payment (PSA license or premium order), used for the
-// weekly accounting report. Written by the Mollie webhook.
-model Sale {
-  id          String   @id @default(cuid())
-  paymentId   String   @unique
-  mode        String
-  product     String
-  email       String?
-  amountCents Int
-  taxDetails  Json?
-  paidAt      DateTime
-  createdAt   DateTime @default(now())
-}
-
-// Claims one weekly accounting report per ISO week (Brussels time).
-model AccountingReportRun {
-  id          String   @id @default(cuid())
-  weekKey     String   @unique
-  periodStart DateTime
-  periodEnd   DateTime
-  status      String
-  sales       Int?
-  createdAt   DateTime @default(now())
-}
-
-// --- Dashboard accounts (magic-link login) ---
-model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  createdAt DateTime  @default(now())
-  sessions  Session[]
-  projects  Project[]
-}
-
-model LoginToken {
-  id        String    @id @default(cuid())
-  tokenHash String    @unique
-  email     String
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-}
-
-model Session {
-  id        String   @id @default(cuid())
-  idHash    String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-}
-
-// A site a user follows in the dashboard. url is normalized (lib/url-normalize.ts).
-model Project {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  url       String
-  createdAt DateTime @default(now())
-
-  @@unique([userId, url])
-}
-
-// One measurement of a site (psa | seo | geo) for score history over time.
-model ScanSnapshot {
-  id        String   @id @default(cuid())
-  url       String
-  kind      String
-  score     Int
-  details   Json?
-  createdAt DateTime @default(now())
-
-  @@index([url, kind, createdAt])
-}
-
-model WebhookEvent {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  type      String
-  payload   Json
-}
-
-model ScanRateLimit {
-  clientHash  String   @id
-  bucketStart DateTime
-  count       Int      @default(0)
+  @@unique([year, seq])
 }

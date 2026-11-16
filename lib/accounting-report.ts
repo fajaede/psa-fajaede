@@ -4,7 +4,9 @@
 // so the accountant receives every sales channel in one format. From Thursday on (Brussels
 // time) a CSV with all paid live payments since the previous report is emailed to
 // ACCOUNTANT_EMAIL. Mollie test-mode payments are never included.
+import { zipSync } from "fflate";
 import { sendMail } from "@/lib/mailer";
+import { invoiceFilename, renderInvoicePdf } from "@/lib/invoice-pdf";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { VatDetails } from "@/lib/vat-rates";
@@ -69,7 +71,7 @@ type SaleRow = {
   paidAt: Date;
 };
 
-function toRow(sale: SaleRow): string[] {
+function toRow(sale: SaleRow, invoiceNumber = ""): string[] {
   const tax = asVatDetails(sale.taxDetails);
   const hasTax = Boolean(tax && typeof tax.grossAmountCents === "number");
   // Fallback without a stored VAT quote: Belgian 21% included in the paid amount.
@@ -83,7 +85,7 @@ function toRow(sale: SaleRow): string[] {
   const ossColumn = isBusiness ? "Nee" : !countryCode ? "Onbekend" : tax?.treatment === "oss-b2c" ? "Ja" : "Nee";
 
   return [
-    "", // No own invoice numbers: B2B invoices are made in the accounting software.
+    cell(invoiceNumber), // PSA-YYYY-NNNN (website invoice) or PEPPOL-NNNN (invoice via Peppol)
     cell(sale.paymentId),
     cell(sale.product),
     countryCode,
@@ -110,7 +112,27 @@ export async function collectRows(since: Date, until: Date): Promise<string[][]>
     where: { mode: "live", paidAt: { gte: since, lt: until } },
     orderBy: { paidAt: "asc" },
   });
-  return sales.map(toRow);
+  const invoices = await prisma.invoice.findMany({
+    where: { paymentId: { in: sales.map((s) => s.paymentId) } },
+    select: { paymentId: true, number: true },
+  });
+  const numbers = new Map(invoices.map((i) => [i.paymentId, i.number]));
+  return sales.map((sale) => toRow(sale, numbers.get(sale.paymentId) ?? ""));
+}
+
+/** ZIP with the PDF of every live website invoice (PSA-...) issued in [since, until). */
+export async function invoicesZip(since: Date, until: Date): Promise<{ filename: string; content: Buffer; count: number } | null> {
+  const invoices = await prisma.invoice.findMany({
+    where: { mode: "live", number: { startsWith: "PSA-" }, createdAt: { gte: since, lt: until } },
+    orderBy: [{ year: "asc" }, { seq: "asc" }],
+  });
+  if (invoices.length === 0) return null;
+  const files: Record<string, Uint8Array> = {};
+  for (const invoice of invoices) {
+    files[invoiceFilename(invoice)] = await renderInvoicePdf(invoice);
+  }
+  const p = localParts(until);
+  return { filename: `psa-fajaede-facturen-${p.year}-${p.month}-${p.day}.zip`, content: Buffer.from(zipSync(files)), count: invoices.length };
 }
 
 export function buildCsv(rows: string[][]): string {
@@ -119,43 +141,72 @@ export function buildCsv(rows: string[][]): string {
   return `﻿${lines.join("\r\n")}\r\n`; // BOM so Excel opens it as UTF-8
 }
 
-export function accountantEmail(): string {
-  return (
+const EMAIL_RE = /^[^@\s<>"',;]+@[^@\s<>"',;]+\.[^@\s<>"',;]+$/;
+
+/**
+ * ACCOUNTANT_EMAIL may hold several addresses separated by commas or semicolons
+ * (e.g. accountant + owner). Accepts a@b.c, <a@b.c> and "Name <a@b.c>" forms.
+ */
+export function accountantRecipients(): string[] {
+  const raw =
     process.env.ACCOUNTANT_EMAIL?.trim() ||
     process.env.INVOICE_NOTIFY_EMAIL?.trim() ||
     process.env.SMTP_FROM?.trim() ||
-    ""
-  );
+    "";
+  const out: string[] = [];
+  for (const part of raw.split(/[,;]/)) {
+    const bracketed = part.match(/<([^<>]+)>/);
+    const address = (bracketed ? bracketed[1] : part).trim().replace(/^[<>"' ]+|[<>"' ]+$/g, "");
+    if (EMAIL_RE.test(address) && !out.some((a) => a.toLowerCase() === address.toLowerCase())) out.push(address);
+  }
+  return out;
 }
 
+/** All report recipients as one readable string (empty when none is configured). */
+export function accountantEmail(): string {
+  return accountantRecipients().join(", ");
+}
 
-/** Email the report for [since, until) to recipient; returns the number of sales. */
-export async function sendReport(since: Date, until: Date, recipient: string): Promise<number> {
+/** Email the report for [since, until) to every recipient (one mail each); returns the number of sales. */
+export async function sendReport(since: Date, until: Date, recipients: string[] | string): Promise<number> {
+  const to = Array.isArray(recipients)
+    ? recipients
+    : recipients.split(",").map((r) => r.trim()).filter(Boolean);
   const rows = await collectRows(since, until);
   const period = `${formatLocalDate(since)} tot ${formatLocalDate(until)}`;
   if (rows.length === 0) {
-    await sendMail({
-      to: recipient,
-      subject: `psa.fajaede.nl - Weekly Sales Report (No sales this week) (${period})`,
-      text: `Geen verkopen op psa.fajaede.nl (PSA-licenties en SEO/GEO re-scans) van ${period}.\n`,
-    });
+    for (const recipient of to) {
+      await sendMail({
+        to: recipient,
+        subject: `psa.fajaede.nl - Weekly Sales Report (No sales this week) (${period})`,
+        text: `Geen verkopen op psa.fajaede.nl (PSA-licenties en SEO/GEO re-scans) van ${period}.\n`,
+      });
+    }
     return 0;
   }
 
   const p = localParts(until);
-  await sendMail({
-    to: recipient,
-    subject: `psa.fajaede.nl - Weekly Sales Report (${period})`,
-    text:
-      `In de bijlage de verkopen van psa.fajaede.nl (PSA-licenties en SEO/GEO re-scans) van ${period}.\n\n` +
-      "Zelfde kolommen als het weekrapport van fajaede.eu en de FajaedeSEO-plugin.\n" +
-      "- Particulieren: geen factuur; de bedragen zijn inclusief btw van het land van de klant (OSS) of Belgische btw.\n" +
-      "- Bedrijven: factuur wordt apart opgemaakt; btw-nummer staat in het rapport, bij EU-bedrijven buiten BE is de btw verlegd.\n" +
-      "- Testbetalingen (Mollie testmodus) zijn niet opgenomen.\n",
-    attachments: [
-      { filename: `psa-fajaede-verkopen-${p.year}-${p.month}-${p.day}.csv`, content: buildCsv(rows), contentType: "text/csv; charset=utf-8" },
-    ],
-  });
+  const zip = await invoicesZip(since, until);
+  const attachments = [
+    { filename: `psa-fajaede-verkopen-${p.year}-${p.month}-${p.day}.csv`, content: buildCsv(rows), contentType: "text/csv; charset=utf-8" },
+    ...(zip ? [{ filename: zip.filename, content: zip.content, contentType: "application/zip" }] : []),
+  ];
+  const text =
+    `In de bijlage de verkopen van psa.fajaede.nl (PSA-licenties en SEO/GEO re-scans) van ${period}.\n\n` +
+    (zip ? `Alle ${zip.count} facturen van deze periode zitten als PDF in het zip-bestand.\n\n` : "") +
+    "Zelfde kolommen als het weekrapport van fajaede.eu en de FajaedeSEO-plugin.\n" +
+    "- PSA-JJJJ-NNNN: factuur die de website zelf verstuurt (particulieren, buitenlandse bedrijven, buiten de EU).\n" +
+    "- PEPPOL-NNNN: Belgisch bedrijf; die factuur wordt via Peppol vanuit het boekhoudprogramma verstuurd.\n" +
+    "- Bij EU-bedrijven buiten België is de btw verlegd.\n" +
+    "- Testbetalingen (Mollie testmodus) zijn niet opgenomen.\n";
+  for (const recipient of to) {
+    await sendMail({
+      to: recipient,
+      subject: `psa.fajaede.nl - Weekly Sales Report (${period})`,
+      text,
+      attachments,
+    });
+  }
   return rows.length;
 }
 
@@ -177,8 +228,8 @@ export function thursdayWeekKey(now: Date): string | null {
  * Safe to call daily or concurrently: the week is claimed in the database first.
  */
 export async function maybeSendWeeklyReport(now = new Date()): Promise<string> {
-  const recipient = accountantEmail();
-  if (!recipient) return "no recipient";
+  const recipient = accountantRecipients();
+  if (recipient.length === 0) return "no recipient";
   const weekKey = thursdayWeekKey(now);
   if (!weekKey) return "not thursday yet";
 
