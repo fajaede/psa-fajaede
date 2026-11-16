@@ -260,7 +260,7 @@ export default function Home() {
         </nav>
         
         <div>
-          <button style={{ background: "transparent", color: "#fff", border: "1px solid #555", padding: "10px 20px", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>Login</button>
+          <a href="/app" style={{ display: "inline-block", background: "transparent", color: "#fff", border: "1px solid #555", padding: "10px 20px", borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: "none" }}>Login</a>
         </div>
       </header>
 

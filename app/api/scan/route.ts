@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { buildReportPath, buildVerifyPath, generateReportId, normalizeReportId } from "@/lib/report-id";
 import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "@/lib/scan-guard";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { isTrustedInternalRequest } from "@/lib/internal-request";
+import { recordScanSnapshot } from "@/lib/scan-history";
+import { psaTrustScore } from "@/lib/psa-score";
 import { checkUrlReputation } from "@/lib/url-reputation";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const body = await request.json();
-    if (!(await verifyTurnstile(body?.turnstileToken, request))) {
+    if (!isTrustedInternalRequest(request) && !(await verifyTurnstile(body?.turnstileToken, request))) {
       return NextResponse.json({ error: "Bevestig eerst dat je een mens bent." }, { status: 403 });
     }
     const url = body?.url as string | undefined;
@@ -162,6 +165,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         ageNote,
         expiresAt,
       },
+    });
+
+    await recordScanSnapshot(url, "psa", psaTrustScore({ securityScore, privacyScore, ageScore }), {
+      pageTitle: title,
+      privacy: { score: privacyScore, note: privacyNote },
+      security: { score: securityScore, note: securityNote },
+      age: { score: ageScore, note: ageNote },
+      reportId: urlHash,
     });
 
     return NextResponse.json({

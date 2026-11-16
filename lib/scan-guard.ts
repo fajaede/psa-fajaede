@@ -166,12 +166,30 @@ export async function fetchPublicResource(
   throw new Error("Te veel redirects.");
 }
 
-export async function checkScanRateLimit(request: Request): Promise<number | null> {
-  const clientKey = request.headers.get("x-real-ip")?.trim()
-    || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+export function clientIpFromHeaders(headers: Pick<Headers, "get">): string {
+  return headers.get("x-real-ip")?.trim()
+    || headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || "unknown";
+}
+
+export async function checkScanRateLimit(request: Request): Promise<number | null> {
+  return checkRateLimit("scan", clientIpFromHeaders(request.headers), MAX_REQUESTS_PER_WINDOW, WINDOW_SECONDS);
+}
+
+/**
+ * Shared fixed-window rate limit in Postgres. Returns null when allowed, or the
+ * number of seconds to wait. The key is HMAC-hashed, so no IPs/emails are stored.
+ * The "scan" bucket keeps the original hash format so existing counters stay valid.
+ */
+export async function checkRateLimit(
+  bucket: string,
+  identifier: string,
+  maxRequests: number,
+  windowSeconds: number,
+): Promise<number | null> {
+  const clientKey = bucket === "scan" ? identifier : `${bucket}:${identifier}`;
   const now = Date.now();
-  const windowStart = new Date(Math.floor(now / (WINDOW_SECONDS * 1000)) * WINDOW_SECONDS * 1000);
+  const windowStart = new Date(Math.floor(now / (windowSeconds * 1000)) * windowSeconds * 1000);
   const hmacKey = process.env.RATE_LIMIT_HASH_SECRET || process.env.DATABASE_URL;
   if (!hmacKey) throw new SharedScanRateLimitUnavailableError();
   const clientHash = createHmac("sha256", hmacKey).update(clientKey).digest("hex");
@@ -193,12 +211,12 @@ export async function checkScanRateLimit(request: Request): Promise<number | nul
     `;
 
     const count = Number(rows[0]?.count ?? 0);
-    if (count > MAX_REQUESTS_PER_WINDOW) {
-      return Math.max(1, Math.ceil((windowStart.getTime() + WINDOW_SECONDS * 1000 - now) / 1000));
+    if (count > maxRequests) {
+      return Math.max(1, Math.ceil((windowStart.getTime() + windowSeconds * 1000 - now) / 1000));
     }
     return null;
   } catch (error) {
-    console.error("Shared scan rate limiter unavailable:", error instanceof Error ? error.name : "UnknownError");
+    console.error("Shared rate limiter unavailable:", error instanceof Error ? error.name : "UnknownError");
     throw new SharedScanRateLimitUnavailableError();
   }
 }

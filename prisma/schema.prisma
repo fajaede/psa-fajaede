@@ -91,6 +91,58 @@ model AccountingReportRun {
   createdAt   DateTime @default(now())
 }
 
+// --- Dashboard accounts (magic-link login) ---
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+  projects  Project[]
+}
+
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  idHash    String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// A site a user follows in the dashboard. url is normalized (lib/url-normalize.ts).
+model Project {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, url])
+}
+
+// One measurement of a site (psa | seo | geo) for score history over time.
+model ScanSnapshot {
+  id        String   @id @default(cuid())
+  url       String
+  kind      String
+  score     Int
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([url, kind, createdAt])
+}
+
 model WebhookEvent {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())

@@ -4,7 +4,7 @@
 // so the accountant receives every sales channel in one format. From Thursday on (Brussels
 // time) a CSV with all paid live payments since the previous report is emailed to
 // ACCOUNTANT_EMAIL. Mollie test-mode payments are never included.
-import nodemailer from "nodemailer";
+import { createMailer } from "@/lib/mailer";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { VatDetails } from "@/lib/vat-rates";
@@ -128,23 +128,12 @@ export function accountantEmail(): string {
   );
 }
 
-function transporter() {
-  const host = process.env.SMTP_HOST?.trim();
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM?.trim();
-  if (!host || !user || !pass || !from) {
-    throw new Error("SMTP_HOST, SMTP_FROM, SMTP_USER and SMTP_PASS are required.");
-  }
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  return { from, transport: nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } }) };
-}
 
 /** Email the report for [since, until) to recipient; returns the number of sales. */
 export async function sendReport(since: Date, until: Date, recipient: string): Promise<number> {
   const rows = await collectRows(since, until);
   const period = `${formatLocalDate(since)} tot ${formatLocalDate(until)}`;
-  const { from, transport } = transporter();
+  const { from, transport } = createMailer();
 
   if (rows.length === 0) {
     await transport.sendMail({

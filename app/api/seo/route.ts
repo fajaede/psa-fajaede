@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "@/lib/scan-guard";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { isTrustedInternalRequest } from "@/lib/internal-request";
+import { recordScanSnapshot } from "@/lib/scan-history";
 import { getSeoBenchmark } from "@/lib/scan-benchmark";
 import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
 import { checkUrlReputation } from "@/lib/url-reputation";
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const body = await request.json();
-    if (!(await verifyTurnstile(body?.turnstileToken, request))) {
+    if (!isTrustedInternalRequest(request) && !(await verifyTurnstile(body?.turnstileToken, request))) {
       return NextResponse.json({ error: "Bevestig eerst dat je een mens bent." }, { status: 403 });
     }
     const url = body?.url as string | undefined;
@@ -56,6 +58,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         } catch (error) {
           console.warn("Live SEO score could not be cached:", error);
         }
+        await recordScanSnapshot(cleanUrl, "seo", trustScore, {
+          source: "live",
+          issues: liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`),
+        });
       }
       return NextResponse.json({
         trustScore,
@@ -285,6 +291,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } catch (error) {
       console.warn("SEO result could not be cached:", error);
     }
+    await recordScanSnapshot(cleanUrl, "seo", responseData.trustScore, {
+      source: liveScoring ? "live" : "local",
+      issues: liveScoring
+        ? liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`)
+        : responseData.criticalIssues,
+    });
 
     return NextResponse.json({
       ...responseData,

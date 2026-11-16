@@ -1,0 +1,27 @@
+import type { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { normalizeSiteUrl } from "@/lib/url-normalize";
+
+export type ScanKind = "psa" | "seo" | "geo";
+export const SCAN_KINDS: ScanKind[] = ["psa", "seo", "geo"];
+
+/**
+ * Store one measurement for the dashboard history. Never throws: a failing
+ * history write must not break the scan response.
+ */
+export async function recordScanSnapshot(
+  url: string,
+  kind: ScanKind,
+  score: number,
+  details?: Prisma.InputJsonValue,
+): Promise<void> {
+  const normalized = normalizeSiteUrl(url);
+  if (!normalized || !Number.isFinite(score)) return;
+  try {
+    await prisma.scanSnapshot.create({
+      data: { url: normalized, kind, score: Math.max(0, Math.min(100, Math.round(score))), details },
+    });
+  } catch (error) {
+    console.warn("Scan snapshot could not be stored:", error instanceof Error ? error.message : error);
+  }
+}

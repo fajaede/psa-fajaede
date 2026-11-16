@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { psaTrustScore } from "@/lib/psa-score";
 
 type Site = {
   id: string;
@@ -17,7 +18,7 @@ export async function GET() {
     const sites: Site[] = scans.map((scan) => ({
       id: String(scan.id),
       url: scan.url,
-      score: 100 - (scan.securityScore?.includes("S1") ? 30 : 0) - (scan.privacyScore?.includes("P1") ? 20 : 0) - (scan.ageScore?.includes("A3") ? 10 : 0),
+      score: psaTrustScore(scan),
     }));
 
     return NextResponse.json(sites, { status: 200 });

@@ -6,7 +6,7 @@ export function turnstileEnabled(): boolean {
   return Boolean(process.env.TURNSTILE_SECRET_KEY?.trim());
 }
 
-export async function verifyTurnstile(token: unknown, request: Request): Promise<boolean> {
+export async function verifyTurnstile(token: unknown, request: { headers: Pick<Headers, "get"> }): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
   if (!secret) return true;
   if (typeof token !== "string" || !token || token.length > 2048) return false;

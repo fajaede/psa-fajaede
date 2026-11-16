@@ -1,17 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { psaTrustScore } from "@/lib/psa-score";
 
 function escapeXml(value: string): string {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&apos;", '"': "&quot;" })[character] || character);
 }
 
-function trustScore(report: { securityScore: string | null; privacyScore: string | null; ageScore: string | null }): number {
-  let score = 100;
-  if (report.securityScore?.includes("S1")) score -= 30;
-  if (report.privacyScore?.includes("P1")) score -= 20;
-  if (report.ageScore?.includes("A3")) score -= 10;
-  return score;
-}
 
 export async function GET(request: NextRequest): Promise<Response> {
   const id = request.nextUrl.searchParams.get("id");
@@ -23,7 +17,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   });
   if (!report) return new Response("Badge not found", { status: 404 });
 
-  const score = trustScore(report);
+  const score = psaTrustScore(report);
   // Without an active license the badge is shown as unverified.
   const color = !report.isPaid ? "#8a949e" : score >= 75 ? "#00d084" : "#ffb347";
   const label = !report.isPaid ? "UNVERIFIED" : score >= 75 ? "PSA VERIFIED" : "PSA REVIEW";

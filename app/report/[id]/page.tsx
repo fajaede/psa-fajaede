@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import ReportClient from "./ReportClient";
+import { psaTrustScore } from "@/lib/psa-score";
 
 export const dynamic = "force-dynamic"; // Voorkomt database queries tijdens het Vercel bouwproces
 
@@ -24,10 +25,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   }
 
   // --- BENCHMARK LOGICA ---
-  let trustScore = 100;
-  if (report.securityScore?.includes("S1")) trustScore -= 30;
-  if (report.privacyScore?.includes("P1")) trustScore -= 20;
-  if (report.ageScore?.includes("A3")) trustScore -= 10;
+  const trustScore = psaTrustScore(report);
 
   let benchmark: { total: number; percentile: number } | null = null;
   try {
