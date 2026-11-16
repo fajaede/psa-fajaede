@@ -1,4 +1,4 @@
-import { createMailer } from "@/lib/mailer";
+import { sendMail } from "@/lib/mailer";
 
 export function appBaseUrl(): string {
   return (process.env.PSA_APP_URL?.trim() || "https://psa.fajaede.nl").replace(/\/+$/, "");
@@ -16,9 +16,7 @@ export async function sendLoginLink(email: string, token: string): Promise<void>
     return;
   }
 
-  const { from, transport } = createMailer();
-  await transport.sendMail({
-    from,
+  await sendMail({
     to: email,
     subject: "Je inloglink voor psa.fajaede.nl",
     text:

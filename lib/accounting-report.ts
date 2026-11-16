@@ -4,7 +4,7 @@
 // so the accountant receives every sales channel in one format. From Thursday on (Brussels
 // time) a CSV with all paid live payments since the previous report is emailed to
 // ACCOUNTANT_EMAIL. Mollie test-mode payments are never included.
-import { createMailer } from "@/lib/mailer";
+import { sendMail } from "@/lib/mailer";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { VatDetails } from "@/lib/vat-rates";
@@ -133,11 +133,8 @@ export function accountantEmail(): string {
 export async function sendReport(since: Date, until: Date, recipient: string): Promise<number> {
   const rows = await collectRows(since, until);
   const period = `${formatLocalDate(since)} tot ${formatLocalDate(until)}`;
-  const { from, transport } = createMailer();
-
   if (rows.length === 0) {
-    await transport.sendMail({
-      from,
+    await sendMail({
       to: recipient,
       subject: `psa.fajaede.nl - Weekly Sales Report (No sales this week) (${period})`,
       text: `Geen verkopen op psa.fajaede.nl (PSA-licenties en SEO/GEO re-scans) van ${period}.\n`,
@@ -146,8 +143,7 @@ export async function sendReport(since: Date, until: Date, recipient: string): P
   }
 
   const p = localParts(until);
-  await transport.sendMail({
-    from,
+  await sendMail({
     to: recipient,
     subject: `psa.fajaede.nl - Weekly Sales Report (${period})`,
     text:
