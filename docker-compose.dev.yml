@@ -1,0 +1,20 @@
+# Local development database only. Start: docker compose -f docker-compose.dev.yml up -d
+services:
+  postgres:
+    image: postgres:17
+    container_name: psa-dev-postgres
+    environment:
+      POSTGRES_USER: psa
+      POSTGRES_PASSWORD: psa
+      POSTGRES_DB: psa_dev
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - psa-dev-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U psa -d psa_dev"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  psa-dev-pgdata:
