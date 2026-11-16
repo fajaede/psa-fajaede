@@ -96,7 +96,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Neon</strong> (database-hosting: opslag van accounts, scans en aankopen; verwerker). De database
-            staat momenteel in de Verenigde Staten (AWS-regio US East).
+            staat in de EU, in Frankfurt (AWS-regio eu-central-1).
           </li>
           <li>
             <strong>Resend</strong> (verzending van inloglinks en servicemails vanaf mail.fajaede.nl, via de EU-regio in

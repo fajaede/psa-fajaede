@@ -228,3 +228,25 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   ALTER TABLE "Project" ADD CONSTRAINT "Project_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Older databases created criticalIssues as text[]; the app expects JSONB (lossless conversion).
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'SeoScan' AND column_name = 'criticalIssues' AND udt_name = '_text'
+  ) THEN
+    ALTER TABLE "SeoScan" ALTER COLUMN "criticalIssues" TYPE JSONB USING COALESCE(to_jsonb("criticalIssues"), '[]'::jsonb);
+    ALTER TABLE "SeoScan" ALTER COLUMN "criticalIssues" SET DEFAULT '[]'::jsonb;
+    ALTER TABLE "SeoScan" ALTER COLUMN "criticalIssues" SET NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'GeoScan' AND column_name = 'criticalIssues' AND udt_name = '_text'
+  ) THEN
+    ALTER TABLE "GeoScan" ALTER COLUMN "criticalIssues" TYPE JSONB USING COALESCE(to_jsonb("criticalIssues"), '[]'::jsonb);
+    ALTER TABLE "GeoScan" ALTER COLUMN "criticalIssues" SET DEFAULT '[]'::jsonb;
+    ALTER TABLE "GeoScan" ALTER COLUMN "criticalIssues" SET NOT NULL;
+  END IF;
+END $$;
