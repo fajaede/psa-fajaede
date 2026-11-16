@@ -95,7 +95,7 @@ export default function PrivacyPage() {
             Frankfurt (EU).
           </li>
           <li>
-            <strong>Database-hosting</strong> (opslag van accounts, scans en aankopen; verwerker).
+            <strong>Neon</strong> (database-hosting: opslag van accounts, scans en aankopen; verwerker).
           </li>
           <li>
             <strong>Resend</strong> (verzending van inloglinks en servicemails vanaf mail.fajaede.nl, via de EU-regio in
@@ -126,7 +126,7 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p style={s.p}>
-          Vercel, Resend en Cloudflare zijn Amerikaanse bedrijven. Waar gegevens buiten de Europese Economische Ruimte
+          Vercel, Neon, Resend en Cloudflare zijn Amerikaanse bedrijven. Waar gegevens buiten de Europese Economische Ruimte
           kunnen worden verwerkt, gebeurt dat op basis van het EU-VS Data Privacy Framework of de
           standaardcontractbepalingen van de Europese Commissie. Wij geven geen gegevens aan anderen, tenzij de wet ons
           daartoe verplicht.
