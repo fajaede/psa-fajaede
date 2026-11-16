@@ -23,6 +23,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p role="alert" style={styles.error}>Deze inloglink is verlopen of al gebruikt. Vraag een nieuwe aan.</p>
         )}
         <LoginForm />
+        <p style={styles.legal}>
+          Door in te loggen gaat u akkoord met de <Link href="/voorwaarden" style={styles.legalLink}>algemene voorwaarden</Link>.
+          Lees ook ons <Link href="/privacy" style={styles.legalLink}>privacybeleid</Link>.
+        </p>
         <Link href="/" style={styles.back}>← Terug naar de scanner</Link>
       </section>
     </main>
@@ -36,4 +40,6 @@ const styles: Record<string, React.CSSProperties> = {
   intro: { margin: 0, color: "#aaa", lineHeight: 1.5 },
   error: { margin: 0, color: "#ff9b9b", fontSize: 14 },
   back: { color: "#888", textDecoration: "none", fontSize: 14 },
+  legal: { margin: 0, color: "#888", fontSize: 13, lineHeight: 1.5 },
+  legalLink: { color: "#a8a7a0" },
 };

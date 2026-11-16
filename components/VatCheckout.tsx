@@ -29,6 +29,7 @@ export function VatCheckout({
   const [vatNumber, setVatNumber] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [quote, setQuote] = useState<{ fingerprint: string; details: VatDetails } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -65,6 +66,7 @@ export function VatCheckout({
           countryCode,
           customerType,
           vatNumber,
+          acceptTerms,
           ...(customerType === "business" ? { companyName, companyAddress } : {}),
         }),
       });
@@ -154,8 +156,23 @@ export function VatCheckout({
         </dl>
       )}
 
+      {currentQuote && (
+        <label style={styles.consent}>
+          <input
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={(event) => setAcceptTerms(event.target.checked)}
+            style={{ marginTop: 3, flexShrink: 0 }}
+          />
+          <span>
+            Ik ga akkoord met de <a href="/voorwaarden" target="_blank" rel="noopener" style={styles.link}>algemene voorwaarden</a> en
+            het <a href="/privacy" target="_blank" rel="noopener" style={styles.link}>privacybeleid</a>. Ik vraag uitdrukkelijk om
+            de dienst direct na betaling te leveren en erken dat ik daardoor mijn herroepingsrecht verlies.
+          </span>
+        </label>
+      )}
       {error && <p role="alert" style={styles.error}>{error}</p>}
-      <button type="button" onClick={handleContinue} disabled={disabled || busy} style={styles.button}>
+      <button type="button" onClick={handleContinue} disabled={disabled || busy || (Boolean(currentQuote) && !acceptTerms)} style={styles.button}>
         {busy ? "Even controleren..." : currentQuote
           ? `Naar Mollie · ${money(currentQuote.grossAmountCents)}`
           : buttonLabel}
@@ -175,5 +192,7 @@ const styles: Record<string, React.CSSProperties> = {
   validation: { marginTop: 8, color: "#77e6aa", fontSize: 13 },
   note: { marginTop: 8, color: "#aaa", fontSize: 13 },
   error: { margin: 0, color: "#ff9b9b", fontSize: 14 },
+  consent: { display: "flex", gap: 10, alignItems: "flex-start", color: "#ccc", fontSize: 14, lineHeight: 1.5, cursor: "pointer" },
+  link: { color: "#00ff99" },
   button: { minHeight: 46, padding: "12px 20px", border: 0, borderRadius: 6, background: "#00ff99", color: "#000", fontWeight: 700, cursor: "pointer" },
 };

@@ -6,11 +6,12 @@ import { validatePublicScanUrl } from "@/lib/scan-guard";
 import { calculateVatInclusiveQuote, VatQuoteError } from "@/lib/vat";
 import { getMollieApiKey } from "@/lib/mollie";
 import { parseBusinessInvoiceDetails } from "@/lib/invoice-details";
+import { requireCheckoutConsent } from "@/lib/consent";
 import { getMollieWebhookUrl, getPsaAppUrl } from "@/lib/psa-urls";
 
 export async function POST(request: Request) {
   try {
-    const { tier, email, scanMode, scanUrl, countryCode, customerType, vatNumber, companyName, companyAddress } = await request.json();
+    const { tier, email, scanMode, scanUrl, countryCode, customerType, vatNumber, companyName, companyAddress, acceptTerms } = await request.json();
     if ((tier !== "RE_SCAN" && tier !== "RE_SCAN_ADV") || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "A valid premium tier and email address are required" }, { status: 400 });
     }
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
       vatNumber,
     });
     const invoiceDetails = parseBusinessInvoiceDetails(customerType, companyName, companyAddress);
+    const consentDetails = requireCheckoutConsent(acceptTerms);
 
     const validScanMode = scanMode === "seo" || scanMode === "geo";
     if (scanMode !== undefined && !validScanMode) {
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
         tier,
         paymentId: "pending",
         priceCents: taxDetails.grossAmountCents,
-        taxDetails: { ...taxDetails, ...invoiceDetails },
+        taxDetails: { ...taxDetails, ...invoiceDetails, ...consentDetails },
         scanUrl: validScanMode ? scanUrl.trim().toLowerCase().replace(/\/$/, "") : null,
         scanMode: validScanMode ? scanMode : null,
       },

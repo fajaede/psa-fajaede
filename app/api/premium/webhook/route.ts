@@ -74,8 +74,22 @@ export async function POST(request: Request) {
     const orderId = payment?.metadata?.orderId;
     const urlHash = payment?.metadata?.urlHash;
 
+    // Store only what is needed for bookkeeping/debugging: not Mollie's "details"
+    // (which can hold the payer's name, IBAN or card data).
     await prisma.webhookEvent.create({
-      data: { type: "payment.updated", payload: payment },
+      data: {
+        type: "payment.updated",
+        payload: {
+          id: payment?.id ?? null,
+          status,
+          mode: payment?.mode ?? null,
+          method: payment?.method ?? null,
+          amount: payment?.amount ?? null,
+          createdAt: payment?.createdAt ?? null,
+          paidAt: payment?.paidAt ?? null,
+          metadata: payment?.metadata ?? null,
+        },
+      },
     });
 
     if (typeof orderId === "string") {

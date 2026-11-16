@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { purgeExpiredData } from "@/lib/data-retention";
 import { accountantEmail, buildCsv, collectRows, maybeSendWeeklyReport, sendReport } from "@/lib/accounting-report";
 
 // Vercel Cron calls this daily with "Authorization: Bearer $CRON_SECRET"; the report itself
@@ -41,6 +42,13 @@ export async function GET(request: Request) {
     });
   }
 
+  let purged: Awaited<ReturnType<typeof purgeExpiredData>> | "failed";
+  try {
+    purged = await purgeExpiredData();
+  } catch (error) {
+    console.error("Data retention cleanup failed:", error);
+    purged = "failed";
+  }
   const result = await maybeSendWeeklyReport();
-  return NextResponse.json({ result }, { status: result === "failed" ? 500 : 200 });
+  return NextResponse.json({ result, purged }, { status: result === "failed" ? 500 : 200 });
 }
