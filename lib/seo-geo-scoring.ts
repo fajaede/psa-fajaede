@@ -1,3 +1,5 @@
+import { checkDetailsNl, checkLabelNl, limitationNl } from "@/lib/seo-geo-nl";
+
 export type SeoGeoScoringResult = {
   score: number;
   maxScore: number;
@@ -89,11 +91,11 @@ export async function getLiveSeoGeoScore(url: string, mode: "seo" | "geo"): Prom
       }
       return {
         code: check.code,
-        label: check.label,
+        label: checkLabelNl(check.code, check.label),
         passed: check.passed,
         points: check.points,
         maxPoints: check.max_points,
-        details: check.details,
+        details: checkDetailsNl(check.code, check.passed, check.details),
       };
     });
     const issues = modeIssues.map((entry) => {
@@ -102,7 +104,9 @@ export async function getLiveSeoGeoScore(url: string, mode: "seo" | "geo"): Prom
       if (typeof issue.label !== "string" || typeof issue.details !== "string") {
         throw new Error("SEO/GEO scoring API returned an invalid issue");
       }
-      return { label: issue.label, details: issue.details };
+      // Issues are the failed checks: translate by their code.
+      const code = typeof issue.code === "string" ? issue.code : "";
+      return { label: checkLabelNl(code, issue.label), details: checkDetailsNl(code, false, issue.details) };
     });
     if (modeCoverage < 0 || modeCoverage > 100) throw new Error("SEO/GEO scoring API returned invalid coverage");
 
@@ -116,7 +120,7 @@ export async function getLiveSeoGeoScore(url: string, mode: "seo" | "geo"): Prom
       breakdown,
       issues,
       coverage: modeCoverage,
-      limitations: rawLimitations as string[],
+      limitations: (rawLimitations as string[]).map(limitationNl),
     };
   } catch (error) {
     console.warn("Live SEO/GEO score unavailable; using the local scan score:", error);
