@@ -9,6 +9,7 @@ import { RescanButton } from "../../DashboardForms";
 import { ScoreFigures } from "../../ScoreFigures";
 import { deleteProject } from "../../actions";
 import { actionPlan, growthScores, type LatestByKind } from "@/lib/growth-overview";
+import { compareWithBenchmark, competitiveScore } from "@/lib/benchmark-api";
 
 type AiCheck = { label: string; status: string; details: string };
 
@@ -63,8 +64,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   ]);
 
   const latest: LatestByKind = Object.fromEntries(summaries.map(({ kind, latest: l }) => [kind, l]));
-  const scores = growthScores(latest);
+  const comparison = await compareWithBenchmark(project.url, {
+    psa: latest.psa?.score, seo: latest.seo?.score, geo: latest.geo?.score, ai: latest.ai?.score,
+  });
+  const scores = growthScores(latest, competitiveScore(comparison));
   const actions = actionPlan(latest);
+  const anyCohort = Object.values(comparison?.metrics ?? {})[0];
+  const tileHint = (key: (typeof OVERVIEW)[number]["key"], hint: string): string => {
+    if (key === "trust" && comparison?.metrics.psa) {
+      return `Top ${comparison.metrics.psa.topPercent}% van ${comparison.metrics.psa.groupSize} ${comparison.metrics.psa.cohortLabel}`;
+    }
+    if (key === "competitive" && anyCohort) return `Gemiddeld percentiel t.o.v. vergelijkbare ${anyCohort.cohortLabel}`;
+    return hint;
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
@@ -93,7 +105,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 {scores[key] ?? "–"}
               </span>
               <span style={{ color: "#a8a7a0", fontSize: 12 }}>
-                {scores[key] === null ? (key === "competitive" ? "Nog geen benchmark" : "Nog niet gemeten") : hint}
+                {scores[key] === null ? (key === "competitive" ? "Nog geen benchmark" : "Nog niet gemeten") : tileHint(key, hint)}
               </span>
             </div>
           ))}

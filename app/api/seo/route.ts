@@ -68,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         criticalIssues: liveScoring
           ? liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`)
           : cachedScan.criticalIssues,
-        benchmark: await getSeoBenchmark(trustScore),
+        benchmark: await getSeoBenchmark(cleanUrl, trustScore),
         scoreSource: liveScoring ? "live" : "stored-fallback",
         liveScoring,
         urlReputation,
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       scoreSource: liveScoring ? "live" : "local-fallback",
       liveScoring,
       urlReputation,
-      benchmark: await getSeoBenchmark(responseData.trustScore),
+      benchmark: await getSeoBenchmark(cleanUrl, responseData.trustScore),
     });
   } catch (e: unknown) {
     console.error("SEO scan error:", e);

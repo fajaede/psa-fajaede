@@ -97,7 +97,7 @@ Zie `.env.example` voor alle namen. Waarden staan alleen in Vercel en in lokale 
 | `GOOGLE_WEB_RISK_API_KEY` | URL-reputatie; zonder sleutel is de reputatie "unknown" |
 | `RATE_LIMIT_HASH_SECRET` | geheim voor het hashen van IP's/e-mails in de rate limiter |
 | `PSA_APP_URL` | basis-URL voor links in mails, badges en Mollie-redirects |
-| `MEILISEARCH_HOST`, `MEILISEARCH_API_KEY`, `MEILISEARCH_INDEX` | benchmark-data |
+| `BENCHMARK_API_KEY` (en optioneel `BENCHMARK_API_URL`) | percentielen uit de Fajaede-benchmark (api.fajaede.eu, zie BENCHMARK.md daar) |
 
 ## Deployen
 

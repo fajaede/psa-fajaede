@@ -79,7 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         criticalIssues: liveScoring
           ? liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`)
           : cachedScan.criticalIssues,
-        benchmark: await getGeoBenchmark(trustScore),
+        benchmark: await getGeoBenchmark(cleanUrl, trustScore),
         scoreSource: liveScoring ? "live" : "stored-fallback",
         liveScoring,
         generativeVisibility,
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       liveScoring,
       generativeVisibility,
       urlReputation,
-      benchmark: await getGeoBenchmark(responseData.trustScore),
+      benchmark: await getGeoBenchmark(cleanUrl, responseData.trustScore),
     });
   } catch (e: unknown) {
     console.error("GEO scan error:", e);
