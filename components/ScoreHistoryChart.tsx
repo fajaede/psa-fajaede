@@ -7,7 +7,8 @@ export type ScoreSeries = { key: string; label: string; points: ScorePoint[] };
 
 // Categorical slots 1-3 of the reference palette (dark steps), validated on the
 // #111111 surface: all-pairs CVD ΔE ≥ 9.4, normal-vision ΔE ≥ 20.9, contrast ≥ 3:1.
-const SERIES_COLORS = ["#3987e5", "#d95926", "#199e70"];
+// Slot 4 (AI) is a light gold: separated from the orange by lightness, not hue alone.
+const SERIES_COLORS = ["#3987e5", "#d95926", "#199e70", "#d4b03a"];
 
 const SURFACE = "#111111";
 const GRID = "#2a2a2a";

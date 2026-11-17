@@ -9,13 +9,13 @@ import { POST as runSeoScanRoute } from "@/app/api/seo/route";
 import { POST as runGeoScanRoute } from "@/app/api/geo/route";
 import { markTrustedInternalRequest } from "@/lib/internal-request";
 import { prisma } from "@/lib/prisma";
-import { SCAN_KINDS, type ScanKind } from "@/lib/scan-history";
+import { SCANNED_KINDS, type ScannedKind } from "@/lib/scan-history";
 import { checkRateLimit, clientIpFromHeaders, validatePublicScanUrl } from "@/lib/scan-guard";
 import { destroyCurrentSession, requireUser } from "@/lib/session";
 import { normalizeSiteUrl } from "@/lib/url-normalize";
 import { KIND_LABELS, MAX_PROJECTS_PER_USER } from "@/lib/projects";
 
-const ROUTES: Record<ScanKind, (request: NextRequest) => Promise<Response>> = {
+const ROUTES: Record<ScannedKind, (request: NextRequest) => Promise<Response>> = {
   psa: runPsaScanRoute,
   seo: runSeoScanRoute,
   geo: runGeoScanRoute,
@@ -27,7 +27,7 @@ export type ActionState = { status: "idle" | "ok" | "error"; message?: string; e
 async function runScans(url: string): Promise<string[]> {
   const ip = clientIpFromHeaders(await headers());
   const results = await Promise.all(
-    SCAN_KINDS.map(async (kind) => {
+    SCANNED_KINDS.map(async (kind) => {
       const request = markTrustedInternalRequest(
         new NextRequest(`https://internal.psa/api/${kind}`, {
           method: "POST",
