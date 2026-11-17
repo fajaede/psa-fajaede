@@ -5,6 +5,7 @@ import { sendMail } from "@/lib/mailer";
 import { TERMS_VERSION } from "@/lib/consent";
 import { euro, formatDate, invoiceFilename, renderInvoicePdf, SELLER } from "@/lib/invoice-pdf";
 import { isPeppolInvoice } from "@/lib/invoices";
+import { parseEmailList } from "@/lib/accounting-report";
 
 const FOOTER = `${SELLER.name} - ${SELLER.street}, 2600 Berchem, België - ${SELLER.vat}`;
 
@@ -58,10 +59,10 @@ export async function sendPurchaseConfirmation(invoice: Invoice): Promise<void> 
 
 /** Owner: create the Peppol invoice in the accounting software for a Belgian business. */
 export async function notifyPeppolInvoice(invoice: Invoice): Promise<void> {
-  const to = process.env.INVOICE_NOTIFY_EMAIL?.trim() || process.env.SMTP_FROM?.trim();
-  if (!to) return;
+  // INVOICE_NOTIFY_EMAIL may list several addresses (e.g. accountant + owner): one mail each.
+  const recipients = parseEmailList(process.env.INVOICE_NOTIFY_EMAIL?.trim() || process.env.SMTP_FROM?.trim() || "");
   const isTest = invoice.mode !== "live";
-  await sendMail({
+  for (const to of recipients) await sendMail({
     to,
     subject: `${isTest ? "[TEST - geen factuur] " : ""}Factuur maken via Peppol: ${invoice.customerName ?? invoice.customerEmail} (psa.fajaede.nl)`,
     text:

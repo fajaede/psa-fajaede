@@ -148,11 +148,16 @@ const EMAIL_RE = /^[^@\s<>"',;]+@[^@\s<>"',;]+\.[^@\s<>"',;]+$/;
  * (e.g. accountant + owner). Accepts a@b.c, <a@b.c> and "Name <a@b.c>" forms.
  */
 export function accountantRecipients(): string[] {
-  const raw =
+  return parseEmailList(
     process.env.ACCOUNTANT_EMAIL?.trim() ||
     process.env.INVOICE_NOTIFY_EMAIL?.trim() ||
     process.env.SMTP_FROM?.trim() ||
-    "";
+    "",
+  );
+}
+
+/** Addresses separated by commas or semicolons; a@b.c, <a@b.c> and "Name <a@b.c>" forms. */
+export function parseEmailList(raw: string): string[] {
   const out: string[] = [];
   for (const part of raw.split(/[,;]/)) {
     const bracketed = part.match(/<([^<>]+)>/);
