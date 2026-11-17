@@ -31,8 +31,11 @@ function brusselsYear(date: Date): number {
   return Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Brussels", year: "numeric" }).format(date));
 }
 
-export function isPeppolInvoice(invoice: Pick<Invoice, "number">): boolean {
-  return invoice.number.startsWith("PEPPOL-");
+/** Belgian business customer: the invoice goes via Peppol. Decided by the customer, not the
+ * number, so Mollie test payments (TEST-NNNN) follow the same route as live ones. */
+export function isPeppolInvoice(invoice: Pick<Invoice, "number" | "customerType" | "countryCode">): boolean {
+  return invoice.number.startsWith("PEPPOL-")
+    || (invoice.customerType === "onderneming" && invoice.countryCode === "BE");
 }
 
 /** Invoice fields derived from the stored VAT quote (falls back to 21% Belgian VAT). */
