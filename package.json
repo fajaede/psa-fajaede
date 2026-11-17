@@ -7,6 +7,8 @@
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./prisma/schema.prisma",
+    "db:repair": "prisma db execute --file=./prisma/repair-production.sql || (sleep 15 && prisma db execute --file=./prisma/repair-production.sql) || (sleep 30 && prisma db execute --file=./prisma/repair-production.sql)",
+    "vercel-build": "npm run prisma:generate && npm run db:repair && next build --webpack",
     "build": "npm run prisma:generate && next build --webpack",
     "start": "next start"
   },
