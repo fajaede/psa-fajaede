@@ -34,7 +34,7 @@ type ScanResult = {
     citationsMeasured: false;
     limitations: string[];
   } | null;
-  benchmark?: { indexDocuments: number; comparableSites: number; percentile: number | null; status: string };
+  benchmark?: { comparableSites: number; percentile: number | null; topPercent: number | null; cohortLabel: string | null; status: string };
   scoreSource?: "live" | "local-fallback" | "stored-fallback";
   liveScoring?: {
     score: number;
@@ -512,22 +512,16 @@ export default function Home() {
                       {result.benchmark?.status === "available" && result.benchmark.percentile !== null ? (
                         <>
                           <p style={{ color: "#ccc", margin: "0 0 14px", fontSize: 14, lineHeight: 1.5 }}>
-                            Je {result.scanMode.toUpperCase()}-score is <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong>. Dat is hoger dan <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>{result.benchmark.percentile}%</strong> van de {result.benchmark.comparableSites.toLocaleString("nl-NL")} sites in de Fajaede.eu-index met een vergelijkbare {result.scanMode === "seo" ? "seo_score" : "geo_score"}.
+                            Je {result.scanMode.toUpperCase()}-score is <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong>. Daarmee zit je in de <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>top {result.benchmark.topPercent}%</strong> van {result.benchmark.comparableSites.toLocaleString("nl-NL")} vergelijkbare {result.benchmark.cohortLabel}.
                           </p>
-                          <p style={{ color: "#777", margin: "0 0 10px", fontSize: 12 }}>Totaal geïndexeerd: {result.benchmark.indexDocuments.toLocaleString("nl-NL")} pagina&apos;s.</p>
+                          <p style={{ color: "#777", margin: "0 0 10px", fontSize: 12 }}>Bron: de Fajaede-benchmark (homepages, zelfde meetmethode als deze scan).</p>
                           <div role="img" aria-label={`Beter dan ${result.benchmark.percentile}% van ${result.benchmark.comparableSites} vergelijkbare sites`} style={{ height: 8, background: "#292929", borderRadius: 999, overflow: "hidden" }}>
                             <div style={{ width: `${result.benchmark.percentile}%`, height: "100%", background: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }} />
                           </div>
                         </>
                       ) : (
                         <p style={{ color: "#aaa", margin: 0, fontSize: 14, lineHeight: 1.5 }}>
-                          {result.benchmark?.status === "score-field-missing"
-                            ? `De index bevat ${result.benchmark.indexDocuments.toLocaleString("nl-NL")} pagina's, maar geen ${result.scanMode === "seo" ? "seo_score" : "geo_score"}-waarden. Een betrouwbaar percentiel is daarom niet beschikbaar.`
-                            : result.benchmark?.status === "insufficient-data"
-                              ? `Er zijn ${result.benchmark.comparableSites} pagina's met een geldige score. Voor een betrouwbare vergelijking zijn minimaal vijf scored sites nodig.`
-                              : result.benchmark?.status === "no-score-variance"
-                                ? `Alle ${result.benchmark.comparableSites} huidige indexsites hebben dezelfde ${result.scanMode === "seo" ? "seo_score" : "geo_score"}. Er is nog geen zinvol percentiel te berekenen.`
-                                : "De Fajaede.eu-index is momenteel niet beschikbaar voor een benchmark. Er wordt geen schatting getoond."}
+                          Nog geen benchmark beschikbaar: er zijn nog te weinig vergelijkbare sites gemeten. We tonen geen schatting.
                         </p>
                       )}
                     </div>

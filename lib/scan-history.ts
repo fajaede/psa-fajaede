@@ -2,8 +2,12 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { normalizeSiteUrl } from "@/lib/url-normalize";
 
-export type ScanKind = "psa" | "seo" | "geo";
-export const SCAN_KINDS: ScanKind[] = ["psa", "seo", "geo"];
+/** Kinds with their own scan route. */
+export type ScannedKind = "psa" | "seo" | "geo";
+export const SCANNED_KINDS: ScannedKind[] = ["psa", "seo", "geo"];
+/** All measured kinds: "ai" (AI-zichtbaarheid) is recorded by the GEO scan. */
+export type ScanKind = ScannedKind | "ai";
+export const SCAN_KINDS: ScanKind[] = ["psa", "seo", "geo", "ai"];
 
 /**
  * Store one measurement for the dashboard history. Never throws: a failing

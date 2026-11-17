@@ -107,6 +107,23 @@ function blockedAiCrawlers(robotsText: string): string[] {
   });
 }
 
+/** AI-zichtbaarheid 0-100: share of passed checks; unknown/not-measured checks do not count. Null when nothing could be judged. */
+export function aiVisibilityScore(checks: GenerativeVisibilityCheck[]): number | null {
+  const judged = checks.filter((check) => check.status === "pass" || check.status === "warning");
+  if (judged.length === 0) return null;
+  return Math.round((judged.filter((check) => check.status === "pass").length / judged.length) * 100);
+}
+
+/** Snapshot details for the dashboard: improvement points plus all checks. */
+export function aiSnapshotDetails(visibility: GenerativeVisibility) {
+  return {
+    issues: visibility.checks
+      .filter((check) => check.status === "warning")
+      .map((check) => `${check.label}: ${check.details}`),
+    checks: visibility.checks.map(({ code, label, status, details }) => ({ code, label, status, details })),
+  };
+}
+
 export async function getGenerativeVisibility(url: string, html?: string): Promise<GenerativeVisibility> {
   const origin = new URL(url).origin;
   const [robots, llms] = await Promise.all([

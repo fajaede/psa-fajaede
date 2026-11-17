@@ -15,7 +15,7 @@ type ReportData = {
   ageScore?: string | null;
   ageNote?: string | null;
   isPaid?: boolean;
-  benchmark?: { total: number; percentile: number } | null;
+  benchmark?: { total: number; percentile: number; topPercent: number; cohortLabel: string } | null;
   badgeBaseUrl: string;
 };
 
@@ -161,12 +161,12 @@ export default function ReportClient({ report }: { report: ReportData }) {
         {report.benchmark && (
           <div style={{ marginTop: 24, padding: "24px 32px", background: "linear-gradient(135deg, rgba(0, 255, 153, 0.05), rgba(0, 170, 255, 0.05))", borderRadius: 16, border: "1px solid rgba(0, 255, 153, 0.2)", display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(0, 255, 153, 0.1)", border: "2px solid #00ff99", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, boxShadow: "0 0 20px rgba(0,255,153,0.3)" }}>
-              <span style={{ fontSize: 24, fontWeight: 900, color: "#00ff99" }}>{report.benchmark.percentile}%</span>
+              <span style={{ fontSize: 20, fontWeight: 900, color: "#00ff99" }}>top {report.benchmark.topPercent}%</span>
             </div>
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: 20, color: "#fff", margin: "0 0 8px 0" }}>Jij vs De Rest (Benchmark)</h3>
               <p style={{ color: "#aaa", margin: 0, fontSize: 15, lineHeight: 1.6 }}>
-                Jouw TrustScore is <strong>{trustScore}</strong>. Hiermee scoor je op dit moment beter dan <strong style={{ color: "#00ff99" }}>{report.benchmark.percentile}%</strong> van de <strong style={{ color: "#fff" }}>{report.benchmark.total.toLocaleString("nl-NL")}</strong> Nederlandse websites in de FajaedeAI Intelligence database!
+                Jouw TrustScore is <strong>{trustScore}</strong>. Daarmee zit je in de <strong style={{ color: "#00ff99" }}>top {report.benchmark.topPercent}%</strong> van <strong style={{ color: "#fff" }}>{report.benchmark.total.toLocaleString("nl-NL")}</strong> vergelijkbare {report.benchmark.cohortLabel} in de Fajaede-benchmark.
               </p>
             </div>
           </div>

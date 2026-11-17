@@ -6,8 +6,14 @@ import { isTrustedInternalRequest } from "@/lib/internal-request";
 import { recordScanSnapshot } from "@/lib/scan-history";
 import { getGeoBenchmark } from "@/lib/scan-benchmark";
 import { getLiveSeoGeoScore } from "@/lib/seo-geo-scoring";
-import { getGenerativeVisibility } from "@/lib/generative-visibility";
+import { aiSnapshotDetails, aiVisibilityScore, getGenerativeVisibility, type GenerativeVisibility } from "@/lib/generative-visibility";
 import { checkUrlReputation } from "@/lib/url-reputation";
+
+/** Store the AI-zichtbaarheid result as its own dashboard measurement. */
+async function recordAiSnapshot(url: string, visibility: GenerativeVisibility): Promise<void> {
+  const score = aiVisibilityScore(visibility.checks);
+  if (score !== null) await recordScanSnapshot(url, "ai", score, aiSnapshotDetails(visibility));
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -56,6 +62,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         getGenerativeVisibility(cleanUrl),
       ]);
       const trustScore = liveScoring?.score ?? cachedScan.trustScore;
+      await recordAiSnapshot(cleanUrl, generativeVisibility);
       if (liveScoring) {
         try {
           await prisma.geoScan.update({ where: { url: cleanUrl }, data: { trustScore } });
@@ -72,7 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         criticalIssues: liveScoring
           ? liveScoring.issues.map((issue) => `${issue.label}: ${issue.details}`)
           : cachedScan.criticalIssues,
-        benchmark: await getGeoBenchmark(trustScore),
+        benchmark: await getGeoBenchmark(cleanUrl, trustScore),
         scoreSource: liveScoring ? "live" : "stored-fallback",
         liveScoring,
         generativeVisibility,
@@ -179,6 +186,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } catch (error) {
       console.warn("GEO result could not be cached:", error);
     }
+    await recordAiSnapshot(cleanUrl, generativeVisibility);
     await recordScanSnapshot(cleanUrl, "geo", responseData.trustScore, {
       source: liveScoring ? "live" : "local",
       issues: liveScoring
@@ -195,7 +203,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       liveScoring,
       generativeVisibility,
       urlReputation,
-      benchmark: await getGeoBenchmark(responseData.trustScore),
+      benchmark: await getGeoBenchmark(cleanUrl, responseData.trustScore),
     });
   } catch (e: unknown) {
     console.error("GEO scan error:", e);

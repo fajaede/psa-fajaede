@@ -8,6 +8,31 @@ import { ScoreHistoryChart } from "@/components/ScoreHistoryChart";
 import { RescanButton } from "../../DashboardForms";
 import { ScoreFigures } from "../../ScoreFigures";
 import { deleteProject } from "../../actions";
+import { actionPlan, growthScores, type LatestByKind } from "@/lib/growth-overview";
+import { compareWithBenchmark, competitiveScore } from "@/lib/benchmark-api";
+
+type AiCheck = { label: string; status: string; details: string };
+
+function aiChecks(details: unknown): AiCheck[] {
+  const checks = (details as { checks?: unknown } | null)?.checks;
+  return Array.isArray(checks)
+    ? checks.filter((c): c is AiCheck => !!c && typeof c.label === "string" && typeof c.status === "string" && typeof c.details === "string")
+    : [];
+}
+
+const AI_STATUS: Record<string, { icon: string; color: string }> = {
+  pass: { icon: "✓", color: "#00ff99" },
+  warning: { icon: "⚠", color: "#ffb347" },
+  unknown: { icon: "?", color: "#a8a7a0" },
+  "not-measured": { icon: "–", color: "#a8a7a0" },
+};
+
+const OVERVIEW: { key: "trust" | "visibility" | "competitive" | "overall"; label: string; hint: string }[] = [
+  { key: "trust", label: "Trust", hint: "PSA: privacy, security, age-safety" },
+  { key: "visibility", label: "Visibility", hint: "SEO + GEO + AI-zichtbaarheid" },
+  { key: "competitive", label: "Competitive", hint: "Benchmark tegen vergelijkbare sites" },
+  { key: "overall", label: "Overall", hint: "Gecombineerde Fajaede-score" },
+];
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +63,21 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     prisma.psaScan.findUnique({ where: { url: project.url }, select: { urlHash: true, isPaid: true } }),
   ]);
 
+  const latest: LatestByKind = Object.fromEntries(summaries.map(({ kind, latest: l }) => [kind, l]));
+  const comparison = await compareWithBenchmark(project.url, {
+    psa: latest.psa?.score, seo: latest.seo?.score, geo: latest.geo?.score, ai: latest.ai?.score,
+  });
+  const scores = growthScores(latest, competitiveScore(comparison));
+  const actions = actionPlan(latest);
+  const anyCohort = Object.values(comparison?.metrics ?? {})[0];
+  const tileHint = (key: (typeof OVERVIEW)[number]["key"], hint: string): string => {
+    if (key === "trust" && comparison?.metrics.psa) {
+      return `Top ${comparison.metrics.psa.topPercent}% van ${comparison.metrics.psa.groupSize} ${comparison.metrics.psa.cohortLabel}`;
+    }
+    if (key === "competitive" && anyCohort) return `Gemiddeld percentiel t.o.v. vergelijkbare ${anyCohort.cohortLabel}`;
+    return hint;
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <Link href="/app" style={{ color: "#a8a7a0", textDecoration: "none", fontSize: 14 }}>← Alle websites</Link>
@@ -55,6 +95,35 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         <RescanButton projectId={project.id} />
       </section>
 
+      <section style={styles.card}>
+        <h2 style={styles.h2}>Trust & Growth</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+          {OVERVIEW.map(({ key, label, hint }) => (
+            <div key={key} style={styles.tile}>
+              <span style={styles.muted}>{label}</span>
+              <span style={{ fontSize: 30, fontWeight: 800, color: key === "overall" ? "#00ff99" : "#f0efec" }}>
+                {scores[key] ?? "–"}
+              </span>
+              <span style={{ color: "#a8a7a0", fontSize: 12 }}>
+                {scores[key] === null ? (key === "competitive" ? "Nog geen benchmark" : "Nog niet gemeten") : tileHint(key, hint)}
+              </span>
+            </div>
+          ))}
+        </div>
+        <h3 style={{ ...styles.h2, marginTop: 8 }}>Belangrijkste acties</h3>
+        {actions.length === 0 ? (
+          <p style={styles.muted}>Geen verbeterpunten gevonden in de laatste scans.</p>
+        ) : (
+          <ol style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6, color: "#ddd", fontSize: 14 }}>
+            {actions.map((action) => (
+              <li key={action.title}>
+                <span style={{ color: "#a8a7a0", fontSize: 12 }}>[{KIND_LABELS[action.source]}]</span> {action.title}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
       <ScoreFigures summaries={summaries} />
 
       <section style={styles.card}>
@@ -67,6 +136,29 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
         {summaries.map(({ kind, latest }) => {
           const items = latest ? findings(kind, latest.details) : [];
+          if (kind === "ai") {
+            const checks = latest ? aiChecks(latest.details) : [];
+            return (
+              <div key={kind} style={styles.card}>
+                <h2 style={styles.h2}>AI-zichtbaarheid</h2>
+                {checks.length === 0 ? (
+                  <p style={styles.muted}>Nog niet gemeten. Doe een nieuwe scan; de GEO-scan meet ook de AI-zichtbaarheid.</p>
+                ) : (
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8, fontSize: 14 }}>
+                    {checks.map((check) => {
+                      const s = AI_STATUS[check.status] ?? AI_STATUS.unknown;
+                      return (
+                        <li key={check.label} style={{ display: "flex", gap: 8 }}>
+                          <span style={{ color: s.color, fontWeight: 700, width: 14, flexShrink: 0 }}>{s.icon}</span>
+                          <span style={{ color: "#ddd" }}><strong>{check.label}</strong> <span style={{ color: "#a8a7a0" }}>{check.details}</span></span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          }
           return (
             <div key={kind} style={styles.card}>
               <h2 style={styles.h2}>Laatste {KIND_LABELS[kind]}-bevindingen</h2>
@@ -96,4 +188,5 @@ const styles: Record<string, React.CSSProperties> = {
   card: { display: "flex", flexDirection: "column", gap: 12, padding: 20, background: "#111", border: "1px solid #2a2a2a", borderRadius: 16, minWidth: 0 },
   h2: { margin: 0, fontSize: 16 },
   muted: { margin: 0, color: "#a8a7a0", fontSize: 14 },
+  tile: { display: "flex", flexDirection: "column", gap: 4, padding: 14, background: "#0b0b0b", border: "1px solid #2a2a2a", borderRadius: 12, minWidth: 0 },
 };
