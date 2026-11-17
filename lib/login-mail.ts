@@ -1,7 +1,11 @@
 import { sendMail } from "@/lib/mailer";
 
+/** Base URL for login links: on a Vercel preview the preview itself, so you log in where you asked. */
 export function appBaseUrl(): string {
-  return (process.env.PSA_APP_URL?.trim() || "https://psa.fajaede.nl").replace(/\/+$/, "");
+  const previewUrl = process.env.VERCEL_ENV === "preview" && process.env.VERCEL_BRANCH_URL
+    ? `https://${process.env.VERCEL_BRANCH_URL}`
+    : "";
+  return (process.env.PSA_APP_URL?.trim() || previewUrl || "https://psa.fajaede.nl").replace(/\/+$/, "");
 }
 
 /**
