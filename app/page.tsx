@@ -255,7 +255,7 @@ export default function Home() {
             )}
           </div>
           
-<a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Pricing</a>
+<a href="/price" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Pricing</a>
         <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Agency</a>
         </nav>
         
