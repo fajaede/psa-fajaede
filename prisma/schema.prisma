@@ -63,6 +63,9 @@ model PremiumOrder {
   scanMode    String?
   status      String @default("pending")
   taxDetails  Json?
+  // Site audit of the paid re-scan (api.fajaede.eu) and the secret token of its results page.
+  siteAuditId String?
+  auditToken  String?  @unique
   createdAt   DateTime @default(now())
 }
 

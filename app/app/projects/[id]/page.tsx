@@ -11,6 +11,7 @@ import { deleteProject } from "../../actions";
 import { actionPlan, growthScores, type LatestByKind } from "@/lib/growth-overview";
 import { compareWithBenchmark, competitiveScore } from "@/lib/benchmark-api";
 import { rankingText } from "@/lib/ranking-text";
+import { normalizeSiteUrl } from "@/lib/url-normalize";
 
 type AiCheck = { label: string; status: string; details: string };
 
@@ -58,11 +59,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const project = await prisma.project.findFirst({ where: { id, userId: user.id } });
   if (!project) notFound();
 
-  const [summaries, history, psaReport] = await Promise.all([
+  const [summaries, history, psaReport, paidOrders] = await Promise.all([
     latestScores(project.url),
     scoreHistory(project.url),
     prisma.psaScan.findUnique({ where: { url: project.url }, select: { urlHash: true, isPaid: true } }),
+    // Only audits this user paid for (same e-mail address), never someone else's report.
+    prisma.premiumOrder.findMany({
+      where: { status: "paid", auditToken: { not: null }, email: { equals: user.email, mode: "insensitive" } },
+      orderBy: { createdAt: "desc" },
+      select: { scanUrl: true, auditToken: true, createdAt: true },
+      take: 50,
+    }),
   ]);
+  const siteAudit = paidOrders.find((o) => o.scanUrl && normalizeSiteUrl(o.scanUrl) === project.url);
 
   const latest: LatestByKind = Object.fromEntries(summaries.map(({ kind, latest: l }) => [kind, l]));
   const comparison = await compareWithBenchmark(project.url, {
@@ -92,6 +101,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             PSA-licentie: {psaReport?.isPaid ? "actief (Trust Badge geverifieerd)" : "niet actief"}
             {psaReport && (
               <> · <Link href={`/report/${psaReport.urlHash}`} style={{ color: "#00ff99" }}>PSA-rapport en Trust Badge</Link></>
+            )}
+            {siteAudit?.auditToken && (
+              <> · <Link href={`/audit/${siteAudit.auditToken}`} style={{ color: "#00ff99" }}>Volledige site-audit</Link></>
             )}
           </p>
         </div>

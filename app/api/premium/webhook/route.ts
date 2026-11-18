@@ -4,6 +4,7 @@ import { getMollieApiKey } from "@/lib/mollie";
 import { issueInvoice, isPeppolInvoice } from "@/lib/invoices";
 import { notifyPeppolInvoice, sendPurchaseConfirmation } from "@/lib/purchase-mail";
 import type { Prisma } from "@prisma/client";
+import { AUDIT_PAGES, auditPageUrl, ensureOrderAudit } from "@/lib/site-audit-api";
 
 // Invoice once per paid payment; mail the customer (and the owner for Peppol) only the first time.
 // Invoice errors propagate (Mollie retries the webhook); mail errors are logged only.
@@ -11,6 +12,7 @@ async function invoiceAndConfirm(
   payment: MolliePayment,
   paymentId: string,
   sale: { description: string; email: string | null; taxDetails: Prisma.JsonValue | null },
+  mailExtra?: string,
 ) {
   const { invoice, created } = await issueInvoice({
     paymentId,
@@ -22,7 +24,7 @@ async function invoiceAndConfirm(
   });
   if (!created) return;
   try {
-    await sendPurchaseConfirmation(invoice);
+    await sendPurchaseConfirmation(invoice, mailExtra);
   } catch (error) {
     console.error("Purchase confirmation mail failed:", error);
   }
@@ -144,11 +146,20 @@ export async function POST(request: Request) {
           email: order.email,
           taxDetails: order.taxDetails,
         });
+        // The paid re-scan includes a site audit (50 or 100 pages). Starting it never blocks the payment.
+        let auditToken: string | null = null;
+        try {
+          auditToken = await ensureOrderAudit(order.id);
+        } catch (error) {
+          console.error("Site audit could not be prepared:", error);
+        }
         await invoiceAndConfirm(payment, paymentId, {
           description: `FajaedeAI ${product}${order.scanUrl ? ` voor ${order.scanUrl}` : ""}`,
           email: order.email,
           taxDetails: order.taxDetails,
-        });
+        }, auditToken
+          ? `Je site-audit (tot ${AUDIT_PAGES[order.tier] ?? 50} pagina's) wordt nu uitgevoerd. Over een paar minuten staat het rapport klaar: ${auditPageUrl(auditToken)}`
+          : undefined);
       }
     } else if (typeof urlHash === "string" && status === "paid") {
       const scan = await prisma.psaScan.update({

@@ -16,14 +16,14 @@ const tiers = [
   {
     name: "Re‑scan",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN) || 149,
-    description: "Volledige her‑scan van de site met technische SEO, content, titles, descriptions en indexatie.",
+    description: "Site‑audit van maximaal 50 pagina's: foutpagina's en gebroken links, titels en omschrijvingen, dubbele of dunne inhoud, indexatie, sitemap en laadtijd. Met rapport per pagina.",
     tierKey: "RE_SCAN",
     button: "Upgrade – €149",
   },
   {
     name: "Re‑scan + adviezen",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN_ADV) || 249,
-    description: "Uitgebreide her‑scan plus concrete verbeterpunten en advies‑call.",
+    description: "Site‑audit van maximaal 100 pagina's met alle verbeterpunten per pagina, plus een advies‑call.",
     tierKey: "RE_SCAN_ADV",
     button: "Upgrade – €249",
   },
@@ -46,7 +46,18 @@ export default function PricePage() {
     <main style={styles.container}>
       <div style={styles.checkoutBadge}>Fajaede Secure Checkout</div>
       <h1 style={styles.title}>Kies jouw {scanMode === "geo" ? "GEO" : "SEO"}‑her‑scan</h1>
-      {scanMode && scanUrl && <p style={styles.context}>Nieuwe live {scanMode.toUpperCase()}-scan voor {scanUrl}</p>}
+      {/* A re-scan includes a site audit of one website: always ask which one. */}
+      <label style={styles.emailLabel}>
+        Website die we onderzoeken
+        <input
+          type="url"
+          required
+          value={scanUrl}
+          onChange={(event) => setScanUrl(event.target.value)}
+          placeholder="https://jouwsite.nl"
+          style={styles.emailInput}
+        />
+      </label>
       <label style={styles.emailLabel}>
         E-mailadres voor de bestelling
         <input
@@ -83,10 +94,11 @@ export default function PricePage() {
             paymentData={{
               tier: selectedTier,
               email: email.trim(),
-              ...(scanMode && scanUrl ? { scanMode, scanUrl } : {}),
+              scanMode: scanMode ?? "seo",
+              scanUrl: scanUrl.trim(),
             }}
             buttonLabel="Bereken btw en totaal"
-            disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}
+            disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !/^(https?:\/\/)?[^\s/.]+\.[^\s]{2,}/i.test(scanUrl.trim())}
           />
         </section>
       )}

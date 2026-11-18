@@ -18,7 +18,7 @@ function amountLines(invoice: Invoice): string {
 }
 
 /** Confirmation to the customer with the PDF invoice (Belgian businesses: invoice follows via Peppol). */
-export async function sendPurchaseConfirmation(invoice: Invoice): Promise<void> {
+export async function sendPurchaseConfirmation(invoice: Invoice, extra?: string): Promise<void> {
   if (!invoice.customerEmail) return;
   const peppol = isPeppolInvoice(invoice);
   const isTest = invoice.mode !== "live";
@@ -33,6 +33,7 @@ export async function sendPurchaseConfirmation(invoice: Invoice): Promise<void> 
       ? "Je factuur ontvang je binnen 5 werkdagen via Peppol.\n"
       : `Factuurnummer: ${invoice.number} (de factuur zit als PDF in de bijlage)\n`)
     + `Betaald op: ${formatDate(invoice.createdAt)} via Mollie (${invoice.paymentId})\n\n`
+    + (extra ? `${extra}\n\n` : "")
     + (consumer
       ? "Je hebt vóór de betaling uitdrukkelijk ingestemd met directe levering van deze digitale "
         + "inhoud en erkend dat je daardoor je herroepingsrecht verliest "

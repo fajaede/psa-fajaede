@@ -35,9 +35,10 @@ export default function TermsPage() {
             licentie geldt per website, voor één jaar na betaling, en wordt niet automatisch verlengd.
           </li>
           <li>
-            <strong>Re-scan en Re-scan + adviezen:</strong> een uitgebreide SEO- of GEO-herscan van de opgegeven website.
-            Bij Re-scan + adviezen ontvangt u ook concrete verbeterpunten en een adviesgesprek dat wij per e-mail met u
-            inplannen.
+            <strong>Re-scan en Re-scan + adviezen:</strong> een site-audit van de opgegeven website (maximaal 50
+            respectievelijk 100 pagina&apos;s) met een online rapport van de verbeterpunten per pagina, plus een nieuwe
+            SEO- of GEO-scan. De audit volgt robots.txt; pagina&apos;s die de website voor onze scanner afschermt, worden
+            niet bekeken. Bij Re-scan + adviezen plannen wij daarnaast per e-mail een adviesgesprek met u in.
           </li>
         </ul>
         <p style={s.p}>
