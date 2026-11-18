@@ -66,6 +66,7 @@ model PremiumOrder {
   // Site audit of the paid re-scan (api.fajaede.eu) and the secret token of its results page.
   siteAuditId String?
   auditToken  String?  @unique
+  auditReruns Int      @default(0) // 'Opnieuw controleren' after fixing (max 3 within 30 days)
   createdAt   DateTime @default(now())
 }
 

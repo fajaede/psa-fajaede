@@ -119,3 +119,43 @@ export async function ensureOrderAudit(orderId: string): Promise<string | null> 
 export function auditPageUrl(token: string): string {
   return `${appBaseUrl()}/audit/${token}`;
 }
+
+// After fixing issues the customer may check again: a few re-runs within a month of the purchase,
+// so a one-off audit does not turn into free ongoing monitoring.
+export const MAX_RERUNS = 3;
+export const RERUN_DAYS = 30;
+
+export function rerunsLeft(order: { auditReruns: number; createdAt: Date }, now = new Date()): number {
+  const expired = now.getTime() - order.createdAt.getTime() > RERUN_DAYS * 86_400_000;
+  return expired ? 0 : Math.max(0, MAX_RERUNS - order.auditReruns);
+}
+
+export type RerunResult = { ok: true } | { ok: false; reason: string };
+
+/** Start a fresh audit for the order behind `token` (after the customer fixed issues). */
+export async function rerunOrderAudit(token: string): Promise<RerunResult> {
+  const order = await prisma.premiumOrder.findUnique({ where: { auditToken: token } });
+  if (!order || order.status !== "paid" || !order.scanUrl) return { ok: false, reason: "Audit niet gevonden." };
+  if (rerunsLeft(order) === 0) {
+    return { ok: false, reason: `Opnieuw controleren kan ${MAX_RERUNS} keer binnen ${RERUN_DAYS} dagen na aankoop; dat is op.` };
+  }
+  if (order.siteAuditId) {
+    const current = await getSiteAudit(order.siteAuditId);
+    if (current && (current.status === "queued" || current.status === "running")) {
+      return { ok: false, reason: "De audit loopt nog; wacht tot hij klaar is." };
+    }
+  }
+  // Claim the re-run first (atomic), so a double click counts once and never exceeds the limit.
+  const claimed = await prisma.premiumOrder.updateMany({
+    where: { id: order.id, auditReruns: order.auditReruns },
+    data: { auditReruns: { increment: 1 } },
+  });
+  if (claimed.count === 0) return { ok: false, reason: "Er loopt al een nieuwe controle." };
+  const auditId = await startSiteAudit(order.scanUrl, AUDIT_PAGES[order.tier] ?? 50);
+  if (!auditId) {
+    await prisma.premiumOrder.update({ where: { id: order.id }, data: { auditReruns: { decrement: 1 } } });
+    return { ok: false, reason: "De controle kon nu niet worden gestart. Probeer het over een paar minuten opnieuw." };
+  }
+  await prisma.premiumOrder.update({ where: { id: order.id }, data: { siteAuditId: auditId } });
+  return { ok: true };
+}

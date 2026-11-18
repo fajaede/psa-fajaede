@@ -283,3 +283,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Invoice_year_seq_key" ON "Invoice"("year", "s
 ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "siteAuditId" TEXT;
 ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "auditToken" TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "PremiumOrder_auditToken_key" ON "PremiumOrder"("auditToken");
+
+-- Number of times the customer re-ran the site audit after fixing issues.
+ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "auditReruns" INTEGER NOT NULL DEFAULT 0;
