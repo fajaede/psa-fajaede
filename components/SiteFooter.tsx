@@ -8,6 +8,7 @@ export function SiteFooter() {
         <Link href="/privacy" style={styles.link}>Privacybeleid</Link>
         <Link href="/cookies" style={styles.link}>Cookiebeleid</Link>
         <Link href="/voorwaarden" style={styles.link}>Algemene voorwaarden</Link>
+        <Link href="/bot" style={styles.link}>Onze scanner</Link>
         <a href="mailto:info@fajaede.nl" style={styles.link}>Contact</a>
       </nav>
       <p style={styles.copy}>© {new Date().getFullYear()} fajaede · BE1032407424</p>

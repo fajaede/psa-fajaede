@@ -1,3 +1,5 @@
+import { SCANNER_USER_AGENT } from "@/lib/scanner";
+
 export type GenerativeVisibilityCheck = {
   code: string;
   label: string;
@@ -31,7 +33,7 @@ async function getText(url: string): Promise<{ status: number; text: string } | 
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       cache: "no-store",
       redirect: "manual",
-      headers: { Accept: "text/plain,text/html,application/xhtml+xml,*/*;q=0.8" },
+      headers: { Accept: "text/plain,text/html,application/xhtml+xml,*/*;q=0.8", "User-Agent": SCANNER_USER_AGENT },
     });
     return { status: response.status, text: response.ok ? await response.text() : "" };
   } catch {
