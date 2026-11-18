@@ -10,6 +10,7 @@ import { ScoreFigures } from "../../ScoreFigures";
 import { deleteProject } from "../../actions";
 import { actionPlan, growthScores, type LatestByKind } from "@/lib/growth-overview";
 import { compareWithBenchmark, competitiveScore } from "@/lib/benchmark-api";
+import { rankingText } from "@/lib/ranking-text";
 
 type AiCheck = { label: string; status: string; details: string };
 
@@ -72,7 +73,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const anyCohort = Object.values(comparison?.metrics ?? {})[0];
   const tileHint = (key: (typeof OVERVIEW)[number]["key"], hint: string): string => {
     if (key === "trust" && comparison?.metrics.psa) {
-      return `Top ${comparison.metrics.psa.topPercent}% van ${comparison.metrics.psa.groupSize} ${comparison.metrics.psa.cohortLabel}`;
+      const m = comparison.metrics.psa;
+      const text = rankingText(m.percentile);
+      return `${text.caption === "top" ? "Top" : "Beter dan"} ${text.short} van ${m.groupSize} ${m.cohortLabel}`;
     }
     if (key === "competitive" && anyCohort) return `Gemiddeld percentiel t.o.v. vergelijkbare ${anyCohort.cohortLabel}`;
     return hint;

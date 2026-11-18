@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { VatCheckout } from "@/components/VatCheckout";
+import { psaImprovements, psaTrustScore } from "@/lib/psa-score";
+import { rankingText } from "@/lib/ranking-text";
 
 type ReportData = {
   url: string;
@@ -25,12 +27,10 @@ export default function ReportClient({ report }: { report: ReportData }) {
   const [email, setEmail] = useState("");
 
   // Live berekening van de Trust Score aan de hand van de scores (P1/S1/A1)
-  let trustScore = 100;
-  const improvements: string[] = [];
-
-  if (report.securityScore?.includes("S1")) { trustScore -= 30; improvements.push("Enable HTTPS / SSL Security"); }
-  if (report.privacyScore?.includes("P1")) { trustScore -= 20; improvements.push("Add Clear Privacy / Cookie Policy"); }
-  if (report.ageScore?.includes("A3")) { trustScore -= 10; improvements.push("Adult content flagged"); }
+  const trustScore = psaTrustScore(report);
+  // The scan's own reasons (e.g. a leaked plugin version), not generic texts like "Enable HTTPS".
+  const improvements = psaImprovements(report);
+  const ranking = report.benchmark ? rankingText(report.benchmark.percentile) : null;
 
   const isGold = trustScore >= 90;
   const isSilver = trustScore >= 75 && trustScore < 90;
@@ -145,7 +145,7 @@ export default function ReportClient({ report }: { report: ReportData }) {
           {/* Tekortkomingen */}
           {improvements.length > 0 && (
             <div style={{ padding: 20, background: "rgba(255,0,0,0.05)", borderRadius: 12, border: "1px solid rgba(255,0,0,0.2)" }}>
-              <h3 style={{ margin: "0 0 12px 0", fontSize: 16, color: "#ff4d4f" }}>{improvements.length} improvements required for 100/100:</h3>
+              <h3 style={{ margin: "0 0 12px 0", fontSize: 16, color: "#ff4d4f" }}>{improvements.length === 1 ? "1 verbeterpunt" : `${improvements.length} verbeterpunten`} voor 100/100:</h3>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                 {improvements.map((imp, i) => (
                   <li key={i} style={{ color: "#eee", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
@@ -158,15 +158,18 @@ export default function ReportClient({ report }: { report: ReportData }) {
         </div>
         
         {/* JIJ VS DE REST (DE HETZNER BENCHMARK) */}
-        {report.benchmark && (
+        {report.benchmark && ranking && (
           <div style={{ marginTop: 24, padding: "24px 32px", background: "linear-gradient(135deg, rgba(0, 255, 153, 0.05), rgba(0, 170, 255, 0.05))", borderRadius: 16, border: "1px solid rgba(0, 255, 153, 0.2)", display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(0, 255, 153, 0.1)", border: "2px solid #00ff99", display: "flex", justifyContent: "center", alignItems: "center", flexShrink: 0, boxShadow: "0 0 20px rgba(0,255,153,0.3)" }}>
-              <span style={{ fontSize: 20, fontWeight: 900, color: "#00ff99" }}>top {report.benchmark.topPercent}%</span>
+              <span style={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.05, textAlign: "center" }}>
+                <span style={{ fontSize: 11, color: "#9fd", textTransform: "uppercase", letterSpacing: 0.5 }}>{ranking.caption}</span>
+                <span style={{ fontSize: 22, fontWeight: 900, color: "#00ff99" }}>{ranking.short}</span>
+              </span>
             </div>
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: 20, color: "#fff", margin: "0 0 8px 0" }}>Jij vs De Rest (Benchmark)</h3>
               <p style={{ color: "#aaa", margin: 0, fontSize: 15, lineHeight: 1.6 }}>
-                Jouw TrustScore is <strong>{trustScore}</strong>. Daarmee zit je in de <strong style={{ color: "#00ff99" }}>top {report.benchmark.topPercent}%</strong> van <strong style={{ color: "#fff" }}>{report.benchmark.total.toLocaleString("nl-NL")}</strong> vergelijkbare {report.benchmark.cohortLabel} in de Fajaede-benchmark.
+                Jouw TrustScore is <strong>{trustScore}</strong>. Daarmee <strong style={{ color: "#00ff99" }}>{ranking.phrase}</strong> van <strong style={{ color: "#fff" }}>{report.benchmark.total.toLocaleString("nl-NL")}</strong> vergelijkbare {report.benchmark.cohortLabel} in de Fajaede-benchmark.
               </p>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "
 import { verifyTurnstile } from "@/lib/turnstile";
 import { isTrustedInternalRequest } from "@/lib/internal-request";
 import { recordScanSnapshot } from "@/lib/scan-history";
-import { psaTrustScore } from "@/lib/psa-score";
+import { COOKIE_BANNERS, psaTrustScore } from "@/lib/psa-score";
 import { checkUrlReputation } from "@/lib/url-reputation";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -69,7 +69,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // --- 1. PRIVACY (GDPR / AVG) ---
     const hasTrackers = lower.includes('google-analytics') || lower.includes('gtag(') || lower.includes('fbq(') || lower.includes('hotjar');
-    const hasCookieBanner = lower.includes('cookiebot') || lower.includes('complianz') || lower.includes('borlabs') || lower.includes('cookieyes');
+    // Known consent tools (CMPs) + the IAB TCF API. Keep in sync with COOKIE_BANNERS in
+    // backend/benchmark/signals.py (fajaede.eu) so the benchmark measures the same way.
+    const hasCookieBanner = COOKIE_BANNERS.some((marker) => lower.includes(marker));
     // Semantisch zoeken naar een privacy of voorwaarden link (meestal in footer)
     const hasPrivacyLink = /<a[^>]*href=[^>]*>([^<]*(privacy|cookie|voorwaarden|gdpr|avg|policy)[^<]*)<\/a>/i.test(html) || /href=["'][^"']*(privacy|cookie|voorwaarden|gdpr|avg|policy)["']/i.test(html);
 
