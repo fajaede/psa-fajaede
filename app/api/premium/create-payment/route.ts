@@ -26,12 +26,15 @@ export async function POST(request: Request) {
     const invoiceDetails = parseBusinessInvoiceDetails(customerType, companyName, companyAddress);
     const consentDetails = requireCheckoutConsent(acceptTerms);
 
-    const validScanMode = scanMode === "seo" || scanMode === "geo";
-    if (scanMode !== undefined && !validScanMode) {
+    // A re-scan is always for one website: it includes the site audit, so the URL is required.
+    const mode = scanMode === undefined || scanMode === null || scanMode === "" ? "seo" : scanMode;
+    if (mode !== "seo" && mode !== "geo") {
       return NextResponse.json({ error: "Invalid scan mode" }, { status: 400 });
     }
-    if (validScanMode && (typeof scanUrl !== "string" || !scanUrl.trim() || await validatePublicScanUrl(scanUrl))) {
-      return NextResponse.json({ error: "A valid public scan URL is required" }, { status: 400 });
+    const rawUrl = typeof scanUrl === "string" ? scanUrl.trim() : "";
+    const siteUrl = rawUrl && !/^https?:\/\//i.test(rawUrl) ? `https://${rawUrl}` : rawUrl;
+    if (!siteUrl || await validatePublicScanUrl(siteUrl)) {
+      return NextResponse.json({ error: "Vul een geldige, openbare website in (bijvoorbeeld https://jouwsite.nl)." }, { status: 400 });
     }
 
     // Create a pending order in the DB (price in cents)
@@ -42,8 +45,8 @@ export async function POST(request: Request) {
         paymentId: "pending",
         priceCents: taxDetails.grossAmountCents,
         taxDetails: { ...taxDetails, ...invoiceDetails, ...consentDetails },
-        scanUrl: validScanMode ? scanUrl.trim().toLowerCase().replace(/\/$/, "") : null,
-        scanMode: validScanMode ? scanMode : null,
+        scanUrl: siteUrl.toLowerCase().replace(/\/$/, ""),
+        scanMode: mode,
       },
     });
 
@@ -55,13 +58,9 @@ export async function POST(request: Request) {
     const baseUrl = getPsaAppUrl(request.url);
     const metadata: Record<string, string> = {
       orderId: order.id,
+      scanMode: mode,
+      scanUrl: order.scanUrl ?? "",
     };
-    if (validScanMode && scanMode) {
-      metadata.scanMode = scanMode;
-    }
-    if (validScanMode && scanUrl) {
-      metadata.scanUrl = scanUrl.trim().toLowerCase().replace(/\/$/, "");
-    }
 
     const mollieClient = createMollieClient({ apiKey: mollieKey });
     const payment = await mollieClient.payments.create({
@@ -69,7 +68,7 @@ export async function POST(request: Request) {
         currency: "EUR",
         value: (taxDetails.grossAmountCents / 100).toFixed(2),
       },
-      description: `${tier} ${validScanMode ? scanMode.toUpperCase() : "SEO"} re-scan for ${email.trim()}`,
+      description: `${tier} ${mode.toUpperCase()} re-scan for ${email.trim()}`,
       redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
       webhookUrl: getMollieWebhookUrl(baseUrl),
       metadata,
