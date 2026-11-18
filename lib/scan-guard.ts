@@ -2,6 +2,7 @@ import dns from "node:dns/promises";
 import { createHmac } from "node:crypto";
 import ipaddr from "ipaddr.js";
 import { prisma } from "@/lib/prisma";
+import { SCANNER_USER_AGENT } from "@/lib/scanner";
 
 const WINDOW_SECONDS = 60;
 const MAX_REQUESTS_PER_WINDOW = 12;
@@ -12,7 +13,7 @@ const BROWSER_HEADERS = {
   "Cache-Control": "no-cache",
   "Pragma": "no-cache",
   "Upgrade-Insecure-Requests": "1",
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+  "User-Agent": SCANNER_USER_AGENT,
 };
 
 function looksLikeCloudflareChallenge(status: number, headers: Headers, body: string): boolean {
@@ -157,7 +158,7 @@ export async function fetchPublicResource(
     }
 
     if (looksLikeCloudflareChallenge(response.status, response.headers, text)) {
-      throw new Error("Cloudflare beschermt deze website tegen automatische scans. Gebruik een browser of zet de botbescherming voor de scanner uit.");
+      throw new Error("Cloudflare beschermt deze website tegen automatische scans. Ben je de eigenaar? Sta onze scanner (FajaedePSA) toe met één Cloudflare-regel: uitleg op psa.fajaede.nl/bot.");
     }
 
     return { status: response.status, url: currentUrl, headers: response.headers, text };
