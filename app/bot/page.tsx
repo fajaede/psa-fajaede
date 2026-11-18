@@ -47,6 +47,18 @@ export default function BotPage() {
         </div>
       </Section>
 
+      <Section title="Echtheid controleren (Web Bot Auth)">
+        <p style={s.p}>
+          Een user-agent kan iedereen nabootsen. Daarom ondertekenen beide bots hun verzoeken digitaal (HTTP Message
+          Signatures, Ed25519) met de headers <code>Signature</code>, <code>Signature-Input</code> en{" "}
+          <code>Signature-Agent</code>. De openbare sleutels staan op:
+        </p>
+        <ul style={s.ul}>
+          <li>{SCANNER_NAME}: <code>https://psa.fajaede.nl/.well-known/http-message-signatures-directory</code></li>
+          <li>{CRAWLER_NAME}: <code>https://api.fajaede.eu/.well-known/http-message-signatures-directory</code></li>
+        </ul>
+      </Section>
+
       <Section title="Toelaten in Cloudflare">
         <p style={s.p}>
           Cloudflare blokkeert onbekende bots. Scan je je eigen website en krijg je de melding dat Cloudflare de site
