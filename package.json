@@ -8,7 +8,8 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=./prisma/schema.prisma",
     "db:repair": "prisma db execute --file=./prisma/repair-production.sql || (sleep 15 && prisma db execute --file=./prisma/repair-production.sql) || (sleep 30 && prisma db execute --file=./prisma/repair-production.sql)",
-    "vercel-build": "npm run prisma:generate && npm run db:repair && next build --webpack",
+    "db:repair:build": "npm run db:repair || (echo 'WARNING: database repair skipped (database unreachable); only allowed on a preview' && [ \"$VERCEL_ENV\" = \"preview\" ])",
+    "vercel-build": "npm run prisma:generate && npm run db:repair:build && next build --webpack",
     "build": "npm run prisma:generate && next build --webpack",
     "start": "next start"
   },
