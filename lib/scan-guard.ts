@@ -158,7 +158,7 @@ export async function fetchPublicResource(
     }
 
     if (looksLikeCloudflareChallenge(response.status, response.headers, text)) {
-      throw new Error("Cloudflare beschermt deze website tegen automatische scans. Ben je de eigenaar? Sta onze scanner (FajaedePSA) toe met één Cloudflare-regel: uitleg op psa.fajaede.nl/bot.");
+      throw new Error("Cloudflare beschermt deze website tegen automatische scans. Ben je de eigenaar? Sta onze scanner (FajaedeScan) toe met één Cloudflare-regel: uitleg op psa.fajaede.nl/bot.");
     }
 
     return { status: response.status, url: currentUrl, headers: response.headers, text };
