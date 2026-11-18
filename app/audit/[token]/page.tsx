@@ -1,13 +1,16 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { AUDIT_PAGES, ensureOrderAudit, getSiteAudit, type AuditIssue } from "@/lib/site-audit-api";
+import { AUDIT_PAGES, ensureOrderAudit, getSiteAudit, rerunsLeft, type AuditIssue } from "@/lib/site-audit-api";
+import { RerunButton } from "./RerunButton";
 import { COMPANY } from "@/components/LegalPage";
 import { AutoRefresh } from "./AutoRefresh";
 
 export const dynamic = "force-dynamic";
 // Private report behind a secret link: keep it out of search engines.
 export const metadata: Metadata = { title: "Site-audit | psa.fajaede.nl", robots: { index: false, follow: false } };
+
+const SHOWN = 20; // URLs shown per issue before "Toon alle"
 
 const SEVERITY: Record<AuditIssue["severity"], { label: string; color: string }> = {
   kritiek: { label: "Kritiek", color: "#ff4d4f" },
@@ -52,9 +55,12 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
             <h2 style={styles.h2}>De audit is niet gelukt</h2>
             <p style={styles.muted}>{audit.error ?? "Onbekende fout."}</p>
             <p style={styles.muted}>
-              Blokkeert je website bots (bijvoorbeeld met Cloudflare)? Zie <a href="/bot" style={styles.link}>psa.fajaede.nl/bot</a>.
-              Mail {COMPANY.email} als je hulp wilt; je audit wordt dan opnieuw uitgevoerd.
+              Blokkeert je website bots (bijvoorbeeld met Cloudflare)? Zie <a href="/bot" style={styles.link}>psa.fajaede.nl/bot</a>,
+              pas dat aan en controleer opnieuw. Lukt het niet, mail dan {COMPANY.email}.
             </p>
+            <div style={{ marginTop: 12 }}>
+              <RerunButton token={token} left={rerunsLeft(order)} />
+            </div>
           </section>
         )}
 
@@ -71,6 +77,19 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
               <p style={styles.muted}>Gemiddelde laadtijd van de HTML: {(result.summary.average_response_ms / 1000).toFixed(1)} s.</p>
             )}
 
+            <section style={{ ...styles.card, display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <h2 style={{ ...styles.h2, margin: 0 }}>Zo werk je de punten af</h2>
+                <p style={styles.muted}>
+                  Begin bij <strong>Kritiek</strong>, dan Belangrijk, dan de tips. Klik een punt open voor de uitleg en de
+                  pagina&apos;s. Download de lijst als CSV om af te vinken wat je hebt opgelost. Gebroken links in je
+                  menu of footer pas je in WordPress aan onder <em>Weergave → Menu&apos;s</em> (of Widgets).
+                </p>
+                <a href={`/audit/${token}/csv`} style={styles.link}>Download alle punten als CSV</a>
+              </div>
+              <RerunButton token={token} left={rerunsLeft(order)} />
+            </section>
+
             <section style={styles.card}>
               <h2 style={styles.h2}>Verbeterpunten</h2>
               {result.issues.length === 0 ? (
@@ -84,10 +103,18 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
                     </summary>
                     <p style={{ ...styles.muted, margin: "8px 0" }}>{issue.explanation}</p>
                     <ul style={styles.urls}>
-                      {issue.urls.map((url) => <li key={url} style={styles.url}>{url}</li>)}
+                      {issue.urls.slice(0, SHOWN).map((url) => <li key={url} style={styles.url}>{url}</li>)}
                     </ul>
+                    {issue.urls.length > SHOWN && (
+                      <details style={{ marginTop: 6 }}>
+                        <summary style={{ ...styles.muted, cursor: "pointer" }}>Toon alle {issue.urls.length}</summary>
+                        <ul style={{ ...styles.urls, marginTop: 6 }}>
+                          {issue.urls.slice(SHOWN).map((url) => <li key={url} style={styles.url}>{url}</li>)}
+                        </ul>
+                      </details>
+                    )}
                     {issue.count > issue.urls.length && (
-                      <p style={styles.muted}>…en nog {issue.count - issue.urls.length} andere.</p>
+                      <p style={styles.muted}>…en nog {issue.count - issue.urls.length} andere (zie de CSV).</p>
                     )}
                   </details>
                 ))
