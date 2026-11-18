@@ -5,7 +5,7 @@ import { checkScanRateLimit, fetchPublicResource, validatePublicScanUrl } from "
 import { verifyTurnstile } from "@/lib/turnstile";
 import { isTrustedInternalRequest } from "@/lib/internal-request";
 import { recordScanSnapshot } from "@/lib/scan-history";
-import { psaTrustScore } from "@/lib/psa-score";
+import { COOKIE_BANNERS, cmsVersionLeak, psaTrustScore } from "@/lib/psa-score";
 import { checkUrlReputation } from "@/lib/url-reputation";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -69,7 +69,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // --- 1. PRIVACY (GDPR / AVG) ---
     const hasTrackers = lower.includes('google-analytics') || lower.includes('gtag(') || lower.includes('fbq(') || lower.includes('hotjar');
-    const hasCookieBanner = lower.includes('cookiebot') || lower.includes('complianz') || lower.includes('borlabs') || lower.includes('cookieyes');
+    // Known consent tools (CMPs) + the IAB TCF API. Keep in sync with COOKIE_BANNERS in
+    // backend/benchmark/signals.py (fajaede.eu) so the benchmark measures the same way.
+    const hasCookieBanner = COOKIE_BANNERS.some((marker) => lower.includes(marker));
     // Semantisch zoeken naar een privacy of voorwaarden link (meestal in footer)
     const hasPrivacyLink = /<a[^>]*href=[^>]*>([^<]*(privacy|cookie|voorwaarden|gdpr|avg|policy)[^<]*)<\/a>/i.test(html) || /href=["'][^"']*(privacy|cookie|voorwaarden|gdpr|avg|policy)["']/i.test(html);
 
@@ -94,9 +96,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const headers = resp.headers;
     const hasHsts = headers.get('strict-transport-security') !== null;
     const hasXFrame = headers.get('x-frame-options') !== null;
-    // Detectie of de website de CMS versie (bijv. WordPress versie) lekt in de code
-    const generatorMatch = html.match(/<meta[^>]*name="generator"[^>]*content="([^"]*)"/i);
-    const hasCmsLeak = generatorMatch !== null;
+    // Detectie of de website de versie van het CMS zelf lekt (bijv. "WordPress 6.4.2").
+    // Plugin-generators zoals "Site Kit by Google 1.192.0" tellen niet: die geven aanvallers weinig.
+    const cmsLeak = cmsVersionLeak(html);
+    const hasCmsLeak = cmsLeak !== null;
 
     let securityScore = "S2 / 3";
     let securityNote = "Standaard HTTPS verbinding actief.";
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       securityNote = "Kritiek: Website forceert geen HTTPS. Onveilige verbinding.";
     } else if (hasCmsLeak) {
       securityScore = "S1 / 3";
-      securityNote = `Beveiligingsrisico: CMS of framework versie wordt publiekelijk gelekt (${generatorMatch![1]}). Hackers kunnen dit misbruiken.`;
+      securityNote = `Beveiligingsrisico: de versie van je CMS is publiek zichtbaar (${cmsLeak}). Aanvallers zoeken gericht naar bekende lekken per versie; verberg de generator-tag en houd het CMS bijgewerkt.`;
     } else if (hasHsts && hasXFrame) {
       securityScore = "S3 / 3";
       securityNote = "Uitstekend: HSTS (Strict-Transport-Security) en Anti-Clickjacking headers zijn actief.";

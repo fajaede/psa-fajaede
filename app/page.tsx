@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Turnstile, type TurnstileHandle } from "@/components/Turnstile";
+import { rankingText } from "@/lib/ranking-text";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
@@ -512,7 +513,7 @@ export default function Home() {
                       {result.benchmark?.status === "available" && result.benchmark.percentile !== null ? (
                         <>
                           <p style={{ color: "#ccc", margin: "0 0 14px", fontSize: 14, lineHeight: 1.5 }}>
-                            Je {result.scanMode.toUpperCase()}-score is <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong>. Daarmee zit je in de <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>top {result.benchmark.topPercent}%</strong> van {result.benchmark.comparableSites.toLocaleString("nl-NL")} vergelijkbare {result.benchmark.cohortLabel}.
+                            Je {result.scanMode.toUpperCase()}-score is <strong style={{ color: "#fff" }}>{result.trustScore}/100</strong>. Daarmee <strong style={{ color: result.scanMode === "seo" ? "#00ff99" : "#00aaff" }}>{rankingText(result.benchmark.percentile ?? 0).phrase}</strong> van {result.benchmark.comparableSites.toLocaleString("nl-NL")} vergelijkbare {result.benchmark.cohortLabel}.
                           </p>
                           <p style={{ color: "#777", margin: "0 0 10px", fontSize: 12 }}>Bron: de Fajaede-benchmark (homepages, zelfde meetmethode als deze scan).</p>
                           <div role="img" aria-label={`Beter dan ${result.benchmark.percentile}% van ${result.benchmark.comparableSites} vergelijkbare sites`} style={{ height: 8, background: "#292929", borderRadius: 999, overflow: "hidden" }}>
