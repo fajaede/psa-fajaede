@@ -16,14 +16,14 @@ const tiers = [
   {
     name: "Re‑scan",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN) || 149,
-    description: "Volledige her‑scan van de site met technische SEO, content, titles, descriptions en indexatie.",
+    description: "Site‑audit van maximaal 50 pagina's: foutpagina's en gebroken links, titels en omschrijvingen, dubbele of dunne inhoud, indexatie, sitemap en laadtijd. Met rapport per pagina.",
     tierKey: "RE_SCAN",
     button: "Upgrade – €149",
   },
   {
     name: "Re‑scan + adviezen",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN_ADV) || 249,
-    description: "Uitgebreide her‑scan plus concrete verbeterpunten en advies‑call.",
+    description: "Site‑audit van maximaal 100 pagina's met alle verbeterpunten per pagina, plus een advies‑call.",
     tierKey: "RE_SCAN_ADV",
     button: "Upgrade – €249",
   },
