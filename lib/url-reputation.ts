@@ -40,7 +40,12 @@ export async function checkUrlReputation(url: string): Promise<UrlReputation> {
       cache: "no-store",
       signal: AbortSignal.timeout(2500),
     });
-    if (!response.ok) return unknown("provider-unavailable");
+    if (!response.ok) {
+      // Log Google's reason (e.g. API not enabled, billing, key restriction) without the key.
+      const detail = await response.text().catch(() => "");
+      console.warn(`Web Risk lookup failed: HTTP ${response.status} ${detail.slice(0, 300)}`);
+      return unknown("provider-unavailable");
+    }
 
     const result = await response.json();
     const rawThreatTypes = result?.threat?.threatTypes;
