@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import ipaddr from "ipaddr.js";
 import { prisma } from "@/lib/prisma";
 import { SCANNER_USER_AGENT } from "@/lib/scanner";
+import { signRequest } from "@/lib/web-bot-auth";
 
 const WINDOW_SECONDS = 60;
 const MAX_REQUESTS_PER_WINDOW = 12;
@@ -115,6 +116,8 @@ export async function fetchPublicResource(
       headers: {
         ...BROWSER_HEADERS,
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        // Web Bot Auth: each redirect hop is signed for its own host.
+        ...signRequest(currentUrl),
       },
     });
 
