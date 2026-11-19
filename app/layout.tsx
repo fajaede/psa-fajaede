@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FajaedeAI Core | Digital Trust Intelligence",
+  title: "FajaedeAI Core | Privacy-, beveiligings- en SEO-scan voor je website",
   description: "PSA, SEO en GEO intelligence voor betrouwbare websites.",
 };
 

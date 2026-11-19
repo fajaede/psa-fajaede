@@ -100,9 +100,9 @@ export default function Home() {
   }, [loading]);
 
   const getLoadingSteps = () => {
-    if (scanMode === "psa") return ["Initiating FajaedeAI Core Engine...", "Analyzing SSL & cryptographic protocols...", "Crawling DOM for GDPR compliance...", "Running semantic vulnerability checks...", "Calculating Final Trust Score..."];
-    if (scanMode === "seo") return ["Initiating FajaedeAI SEO Crawler...", "Analyzing Core Web Vitals & LCP...", "Checking Dynamic Schema & AI endpoints...", "Evaluating keyword density...", "Compiling critical issue report..."];
-    return ["Initiating local visibility audit...", "Checking business identity signals...", "Reviewing AI crawler access...", "Inspecting structured data and answer formats...", "Compiling GEO readiness findings..."];
+    if (scanMode === "psa") return ["FajaedeAI Core gestart…", "HTTPS en beveiligingsheaders controleren…", "Cookies, trackers en toestemming zoeken…", "Signalen voor leeftijdsgevoelige inhoud controleren…", "Trust-score berekenen…"];
+    if (scanMode === "seo") return ["Pagina ophalen…", "Titel, beschrijving en koppen controleren…", "Gestructureerde data en indexatie controleren…", "Techniek en mobiele weergave beoordelen…", "Rapport samenstellen…"];
+    return ["Lokale vindbaarheid controleren…", "Bedrijfsgegevens en NAW-signalen zoeken…", "Toegang voor AI-crawlers controleren…", "Gestructureerde data en antwoordformaten bekijken…", "GEO-bevindingen samenstellen…"];
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -141,7 +141,7 @@ export default function Home() {
       });
 
       if (!res.ok) {
-        let errorMessage = "Scan failed. Please try again.";
+        let errorMessage = "De scan is mislukt. Probeer het opnieuw.";
         try {
           const errData = await res.json();
           if (errData.error) errorMessage = errData.error;
@@ -157,7 +157,7 @@ export default function Home() {
         window.localStorage.setItem('lastResult', JSON.stringify({ ...data, scanMode, url: scanUrl }));
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : "Er ging iets mis. Probeer het opnieuw.");
     } finally {
       setLoading(false);
       turnstileRef.current?.reset(); // tokens are single-use
@@ -245,14 +245,14 @@ export default function Home() {
           }}
         >
           <span style={{ color: "#ffdd00", fontWeight: "bold" }}>FajaedeAI Core</span>
-          <span style={{ color: "#999", fontWeight: 500 }}>Digital Trust Intelligence</span>
+          <span style={{ color: "#999", fontWeight: 500 }}>Digitaal vertrouwen, meetbaar</span>
         </div>
         <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 900, marginTop: 24, marginBottom: 16, lineHeight: 1.1, letterSpacing: -1 }}>
-          Is your website <span style={{ color: "#ffdd00" }}>ready to be trusted?</span>
+          Kunnen bezoekers jouw website <span style={{ color: "#ffdd00" }}>vertrouwen?</span>
         </h1>
         <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: "#aaa", marginBottom: 32, maxWidth: 700, margin: "0 auto 32px auto", lineHeight: 1.5 }}>
-          {scanMode === "psa" && "FajaedeAI Core analyzes your website across privacy, security, age compliance, SEO and AI visibility — and turns the results into measurable trust signals."}
-          {scanMode === "seo" && "De ultieme SEO Audit Engine voor FajaedeSEO AI klanten. Analyseer direct on-page factoren, backlinks en technische pijnpunten."}
+          {scanMode === "psa" && "FajaedeAI Core controleert je website op privacy, beveiliging en leeftijdsveiligheid, plus SEO en AI-zichtbaarheid, en maakt daar meetbare vertrouwenssignalen van."}
+          {scanMode === "seo" && "Controleer direct de technische SEO van een pagina: titels, beschrijvingen, koppen, gestructureerde data en indexatie."}
           {scanMode === "geo" && "Controleer lokale bedrijfssignalen en technische AI-crawlbaarheid. Deze scan meet geen live Google Maps-posities of daadwerkelijke AI-citaties."}
         </p>
 
@@ -262,10 +262,10 @@ export default function Home() {
               <span className="tabIcon" aria-hidden="true">🛡️</span><span className="tabBtnContent"><span className="tabBtnLabel">PSA Trust</span><span className="tabBtnDescription">Privacy, beveiliging en leeftijdsrisico</span></span>
             </button>
             <button className="tabBtn" onClick={() => setScanMode("seo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "seo" ? "#00ff99" : "transparent", color: scanMode === "seo" ? "#000" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
-              <span className="tabIcon" aria-hidden="true">📈</span><span className="tabBtnContent"><span className="tabBtnLabel">SEO Audit</span><span className="tabBtnDescription">Technische SEO, content en prestaties</span></span>
+              <span className="tabIcon" aria-hidden="true">📈</span><span className="tabBtnContent"><span className="tabBtnLabel">SEO-audit</span><span className="tabBtnDescription">Technische SEO, content en prestaties</span></span>
             </button>
             <button className="tabBtn" onClick={() => setScanMode("geo")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "geo" ? "#00aaff" : "transparent", color: scanMode === "geo" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
-              <span className="tabIcon" aria-hidden="true">🌍</span><span className="tabBtnContent"><span className="tabBtnLabel">GEO Local</span><span className="tabBtnDescription">Lokale signalen en AI-crawlbaarheid</span></span>
+              <span className="tabIcon" aria-hidden="true">🌍</span><span className="tabBtnContent"><span className="tabBtnLabel">GEO lokaal</span><span className="tabBtnDescription">Lokale signalen en AI-crawlbaarheid</span></span>
             </button>
         </div>
       </section>
@@ -303,7 +303,7 @@ export default function Home() {
           />
           <button className="searchBtn" type="submit" disabled={loading}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 20l-5.6-5.6a7 7 0 10-1.4 1.4L20 21zM10 16a6 6 0 110-12 6 6 0 010 12z"/></svg>
-            <span>{loading ? "Scanning..." : scanMode === "psa" ? "Run free scan" : `Scan ${scanMode.toUpperCase()}`}</span>
+            <span>{loading ? "Bezig met scannen…" : scanMode === "psa" ? "Gratis scan starten" : `${scanMode.toUpperCase()}-scan starten`}</span>
           </button>
         </div>
         {TURNSTILE_SITE_KEY && (
@@ -367,7 +367,7 @@ export default function Home() {
         <div style={{ position: "relative", zIndex: 10, marginTop: 4, display: "flex", alignItems: "center", gap: 10, background: "rgba(0, 255, 153, 0.05)", border: "1px solid rgba(0, 255, 153, 0.2)", padding: "8px 20px", borderRadius: 999, color: "#00ff99", fontSize: 13, fontWeight: 600, letterSpacing: 0.5 }}>
           {/* De oplichtende neon-stip */}
           <span style={{ display: "inline-block", width: 8, height: 8, background: "#00ff99", borderRadius: "50%", boxShadow: "0 0 10px #00ff99" }}></span>
-          <span>Trusted by websites across Europe</span>
+          <span>Gratis · geen account nodig · direct resultaat</span>
         </div>
       )}
 
@@ -379,41 +379,29 @@ export default function Home() {
             <div style={{ fontSize: 32, marginBottom: 16 }}>🔒</div>
             <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Privacy</h3>
             <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-              Detect cookie, tracking and consent signals that may create privacy or compliance risk. This is a screening layer, not a legal determination.
+              Vindt cookies, trackers en toestemmingssignalen die een privacy- of AVG-risico kunnen vormen. Een eerste screening, geen juridisch oordeel.
             </p>
           </div>
 
           <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>🛡️</div>
-            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Security</h3>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Beveiliging</h3>
             <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-              Review public exposure of software versions, security headers and transport protections. Findings indicate risk and recommended action, not guaranteed exploitation.
+              Controleert zichtbare softwareversies, beveiligingsheaders en HTTPS. De bevindingen wijzen op risico's en geven advies; ze bewijzen niet dat je site te misbruiken is.
             </p>
           </div>
 
           <div style={{ background: "#111", border: "1px solid #222", borderRadius: 16, padding: 32, transition: "transform 0.2s", cursor: "default" }} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>🔞</div>
-            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Age & Content Risk</h3>
+            <h3 style={{ color: "#fff", fontSize: 18, marginBottom: 12 }}>Leeftijd en inhoud</h3>
             <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
-              Detect content and classification signals that may increase age-restriction or sensitive-content risk. This helps identify areas for review and mitigation.
+              Zoekt signalen van inhoud die een leeftijdsgrens of extra zorg kan vragen, zodat je weet waar je beter naar kunt kijken.
             </p>
           </div>
 
         </section>
       )}
 
-      {!result && !loading && (
-        <div style={{ position: "relative", zIndex: 10, marginTop: 64, textAlign: "center" }}>
-          <p style={{ color: "#555", fontSize: 13, textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>Trusted by forward-thinking websites</p>
-          <div style={{ display: "flex", gap: 32, justifyContent: "center", opacity: 0.3, filter: "grayscale(100%)" }}>
-            {/* Fake logo placeholders, you can replace these with real clients later */}
-            <div style={{ fontWeight: 900, fontSize: 20 }}>TechCorp</div>
-            <div style={{ fontWeight: 900, fontSize: 20 }}>FajaedeSEO</div>
-            <div style={{ fontWeight: 900, fontSize: 20 }}>WebSecure</div>
-            <div style={{ fontWeight: 900, fontSize: 20 }}>DutchDesign</div>
-          </div>
-        </div>
-      )}
 
 
       {/* RESULTAAT: SEO & GEO AUDIT (De Upsell naar de WP Plugin) */}
@@ -437,7 +425,7 @@ export default function Home() {
           }}
         >
           <h2 style={{ fontSize: 28, color: "#fff", margin: 0, fontWeight: 900 }}>
-            {result.scanMode === "seo" ? "SEO & Privacy Audit Report" : "GEO Local Audit Report"}
+            {result.scanMode === "seo" ? "SEO-rapport" : "GEO-rapport (lokale vindbaarheid)"}
           </h2>
           <p style={{ color: "#aaa", margin: 0, fontSize: 16 }}>Geanalyseerd domein: <strong style={{ color: "#fff" }}>{result.url}</strong></p>
           {result.urlReputation && <UrlReputationNotice reputation={result.urlReputation} />}
@@ -499,7 +487,7 @@ export default function Home() {
           </div>
           <div style={{ marginTop: -24, color: "#aaa", fontSize: 13 }}>
             {result.scoreSource === "live"
-              ? `Live ${result.scanMode === "seo" ? "on-page SEO" : "local GEO"}-score van de Fajaede audit-API`
+              ? `Live ${result.scanMode === "seo" ? "SEO" : "GEO"}-score van de Fajaede audit-API`
               : result.scoreSource === "stored-fallback"
                 ? "Opgeslagen score (live score tijdelijk niet beschikbaar)"
                 : "Lokale scan-score (live score tijdelijk niet beschikbaar)"}
@@ -541,7 +529,7 @@ export default function Home() {
               <div style={{ position: "absolute", width: 400, height: 400, background: "conic-gradient(from 0deg, transparent 70%, rgba(0, 170, 255, 0.6) 100%)", borderRadius: "50%", animation: "spin 3s linear infinite" }}></div>
               <div style={{ position: "absolute", width: "100%", height: "100%", background: "repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,170,255,0.15) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,170,255,0.15) 20px)" }}></div>
               <div style={{ zIndex: 2, background: "rgba(0,0,0,0.8)", padding: "10px 24px", borderRadius: 999, border: "1px solid #00aaff", color: "#00aaff", fontSize: 15, fontWeight: 900, backdropFilter: "blur(4px)", textTransform: "uppercase", letterSpacing: 1, boxShadow: "0 0 20px rgba(0,170,255,0.4)" }}>
-                GEO & AI-readiness scan
+                GEO- en AI-gereedheid
               </div>
               <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { 100% { transform: rotate(360deg); } }` }} />
             </div>
@@ -579,7 +567,7 @@ export default function Home() {
           {/* Pijnpunten / Issues benadrukken */}
           <div style={{ background: "rgba(255,0,0,0.05)", border: "1px solid rgba(255,0,0,0.2)", borderRadius: 12, padding: 24, textAlign: "left" }}>
             <h3 style={{ color: "#ff4d4f", margin: "0 0 16px 0", fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>⚠️</span> Kritieke {result.scanMode === "seo" ? "Website & Privacy" : "Lokale"} Problemen Gevonden
+              <span>⚠️</span> Belangrijkste {result.scanMode === "seo" ? "SEO-" : "lokale "}verbeterpunten
             </h3>
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
               {result.criticalIssues?.map((issue, idx) => (
@@ -593,24 +581,24 @@ export default function Home() {
           {/* DE OPLOSSING: Massive Call To Action naar de Download */}
           <div style={{ background: "linear-gradient(135deg, #1a1a1a, #050505)", padding: 32, borderRadius: 12, border: "1px solid #333", marginTop: 8 }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>🤖</div>
-            <h3 style={{ color: "#fff", fontSize: 22, marginBottom: 12 }}>Fix alles met FajaedeSEO AI</h3>
+            <h3 style={{ color: "#fff", fontSize: 22, marginBottom: 12 }}>Los het op met FajaedeSEO AI</h3>
             <p style={{ color: "#aaa", fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>
-              Verlies geen organisch verkeer meer door technische CMS- of privacyfouten in je website. Koppel jouw website aan onze Intelligence Layer en laat de AI alles automatisch optimaliseren.
+              Gebruik je WordPress? De FajaedeSEO AI-plugin controleert je pagina's en helpt je deze punten op te lossen, van titels en beschrijvingen tot schema en privacy-instellingen.
             </p>
             <a 
-              href="https://www.fajaede.nl/download" 
+              href="https://www.fajaede.nl/download-fajaedeseo-ai-now-from-the-wordpress-repository/" 
               target="_blank" 
               rel="noopener noreferrer" 
               style={{ display: "inline-block", width: "100%", padding: "18px 24px", background: result.scanMode === "seo" ? "#00ff99" : "#00aaff", color: "#000", fontWeight: 900, fontSize: 16, textTransform: "uppercase", letterSpacing: 1, borderRadius: 8, textDecoration: "none", boxShadow: `0 4px 20px ${result.scanMode === "seo" ? "rgba(0,255,153,0.3)" : "rgba(0,170,255,0.3)"}`, transition: "transform 0.2s" }}
               onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} 
               onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              Koppel met FajaedeSEO AI (Start Direct)
+              Download FajaedeSEO AI voor WordPress
             </a>
             <div style={{ display: "flex", justifyContent: "center", gap: 16, color: "#888", fontSize: 13, marginTop: 20, flexWrap: "wrap", fontWeight: 500 }}>
-              <span>✓ WordPress & Elementor</span>
-              <span>✓ Shopify & Wix</span>
-              <span>✓ Universele API</span>
+              <span>✓ WordPress-plugin</span>
+              <span>✓ Werkt met Elementor</span>
+              <span>✓ Developer API voor andere systemen</span>
             </div>
           </div>
         </section>
@@ -640,23 +628,23 @@ export default function Home() {
               <span style={{ fontWeight: 900, fontSize: 18, color: "rgb(255, 255, 255)", textShadow: "rgba(0, 0, 0, 0.7) 0px 1px 3px" }}>PSA</span>
             </div>
             <div>
-              <div style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "rgb(255, 221, 0)", marginBottom: 4 }}>PSA Verified by FajaedeAI</div>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>Scan result for {result.url}</div>
+              <div style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "rgb(255, 221, 0)", marginBottom: 4 }}>PSA-scan door FajaedeAI</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>Scanresultaat voor {result.url}</div>
               <div style={{ fontSize: 13, color: "rgb(221, 221, 221)" }}>
-                PSA status: <strong style={{ color: Number(result.trustScore ?? 0) >= 75 ? "rgb(0, 255, 153)" : "rgb(255, 179, 71)" }}>{Number(result.trustScore ?? 0) >= 75 ? "VERIFIED" : "NEEDS ATTENTION"}</strong>
+                PSA-status: <strong style={{ color: Number(result.trustScore ?? 0) >= 75 ? "rgb(0, 255, 153)" : "rgb(255, 179, 71)" }}>{Number(result.trustScore ?? 0) >= 75 ? "In orde" : "Aandacht nodig"}</strong>
               </div>
             </div>
           </div>
           {result.urlReputation && <UrlReputationNotice reputation={result.urlReputation} />}
           
           <div style={{ display: "grid", gridTemplateColumns: isSmallScreen ? "1fr" : "repeat(3, minmax(0px, 1fr))", gap: 12, marginTop: 4 }}>
-            <ScoreBox label="Privacy" score={result.privacy?.score || "N/A"} note={result.privacy?.note || "Geen data"} />
-            <ScoreBox label="Security" score={result.security?.score || "N/A"} note={result.security?.note || "Geen data"} />
-            <ScoreBox label="Age" score={result.age?.score || "N/A"} note={result.age?.note || "Geen data"} />
+            <ScoreBox label="Privacy" score={result.privacy?.score || "–"} note={result.privacy?.note || "Geen data"} />
+            <ScoreBox label="Beveiliging" score={result.security?.score || "–"} note={result.security?.note || "Geen data"} />
+            <ScoreBox label="Leeftijd" score={result.age?.score || "–"} note={result.age?.note || "Geen data"} />
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 8, fontSize: 13 }}>
-            <span style={{ color: "rgb(238, 238, 238)" }}>View or share the full PSA report:</span>
+            <span style={{ color: "rgb(238, 238, 238)" }}>Bekijk of deel het volledige PSA-rapport:</span>
             { (result.reportUrl || result.url) && (
               <a
                 href={result.reportUrl || `/report?url=${encodeURIComponent(result.url || "")}`}
@@ -664,7 +652,7 @@ export default function Home() {
                 rel="noreferrer"
                 style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid rgb(255, 221, 0)", color: "rgb(17, 17, 17)", background: "rgb(255, 221, 0)", fontWeight: 600, textDecoration: "none" }}
               >
-                Open PSA report
+                Open PSA-rapport
               </a>
             )}
           </div>
