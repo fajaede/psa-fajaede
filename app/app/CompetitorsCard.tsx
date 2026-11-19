@@ -26,7 +26,7 @@ export function CompetitorsCard({ competitors }: { competitors: Competitors | nu
       {yourAuthority !== null && (
         <p style={styles.muted}>
           Jouw autoriteit (links van andere sites): <strong style={{ color: "#f0efec" }}>{yourAuthority}</strong>
-          {" "}· sterker dan {yourAuthority}% van de sites met dezelfde extensie die links hebben.
+          {" "}(0–100, logaritmisch; 100 = sterkste site met dezelfde extensie).
         </p>
       )}
       {youLead && <p style={{ ...styles.muted, color: "#00ff99" }}>Je staat bovenaan in deze groep.</p>}

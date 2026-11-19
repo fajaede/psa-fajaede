@@ -43,7 +43,7 @@ export type Competitors = {
 };
 
 export type Backlinks = {
-  authority: number | null;          // 0-100: share of same-extension domains with weaker links
+  authority: number | null;          // 0-100, logarithmic in the rank among same-extension sites with links
   authorityRank: number | null;      // 1 = strongest domain of this extension
   authorityOf: number | null;        // number of domains with this extension in the web graph
   referringDomains: number | null;   // distinct domains linking to this one (any extension)

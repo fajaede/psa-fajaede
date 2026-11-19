@@ -40,7 +40,7 @@ export function BacklinksCard({ backlinks, extension }: { backlinks: Backlinks |
             {authority === null ? "Nog niet bekend"
               : authorityRank !== null && authorityOf !== null
                 ? `Plek ${nf(authorityRank)} van ${nf(authorityOf)} ${extension}-sites met links`
-                : authority === 0 ? "Nog geen links gevonden" : `Sterker dan ${authority}% van de ${extension}-sites met links`}
+                : authority === 0 ? "Nog geen links gevonden" : `Schaal 0–100; 100 = sterkste ${extension}-site`}
           </span>
         </div>
       </div>
@@ -64,7 +64,8 @@ export function BacklinksCard({ backlinks, extension }: { backlinks: Backlinks |
         </p>
       )}
       <p style={{ ...styles.muted, fontSize: 12 }}>
-        Bron: de openbare linkkaart van Common Crawl{period ? ` (${period})` : ""}, op domeinniveau. Nieuwe links
+        Bron: de openbare linkkaart van Common Crawl{period ? ` (${period})` : ""}, op domeinniveau. Autoriteit
+        is logaritmisch, net als bij bekende SEO-tools: elke stap omhoog is moeilijker. Nieuwe links
         verschijnen pas bij de volgende uitgave, eens per paar maanden.
       </p>
     </section>
