@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Algemene voorwaarden" updated="16 november 2026">
+    <LegalPage title="Algemene voorwaarden" updated="18 november 2026">
       <Section title="1. Wie zijn wij en wanneer gelden deze voorwaarden?">
         <p style={s.p}>psa.fajaede.nl is een dienst van:</p>
         <CompanyBlock />
