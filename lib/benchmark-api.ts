@@ -72,6 +72,7 @@ export type CompetitorEntry = {
   scores: Partial<Record<BenchmarkMetric, number | null>>;
   aheadOn: { metric: BenchmarkMetric; label: string; theirs: number; yours: number; difference: number }[];
   authority: number | null;   // Common Crawl link authority 0-100 (null = unknown)
+  referringDomains: number | null;
 };
 
 export type Competitors = {
@@ -79,6 +80,7 @@ export type Competitors = {
   groupSize: number;
   yourOverall: number | null;
   yourAuthority: number | null;
+  yourReferringDomains: number | null;
   ahead: CompetitorEntry[];
   leader: CompetitorEntry | null;
   behind: CompetitorEntry | null;
@@ -88,7 +90,7 @@ export type Competitors = {
 
 function toEntry(raw: unknown): CompetitorEntry | null {
   if (!raw || typeof raw !== "object") return null;
-  const r = raw as { domain?: unknown; overall?: unknown; scores?: unknown; ahead_on?: unknown; authority?: unknown };
+  const r = raw as { domain?: unknown; overall?: unknown; scores?: unknown; ahead_on?: unknown; authority?: unknown; referring_domains?: unknown };
   if (typeof r.domain !== "string") return null;
   return {
     domain: r.domain,
@@ -96,6 +98,7 @@ function toEntry(raw: unknown): CompetitorEntry | null {
     scores: (r.scores && typeof r.scores === "object" ? r.scores : {}) as CompetitorEntry["scores"],
     aheadOn: Array.isArray(r.ahead_on) ? (r.ahead_on as CompetitorEntry["aheadOn"]) : [],
     authority: typeof r.authority === "number" ? r.authority : null,
+    referringDomains: typeof r.referring_domains === "number" ? r.referring_domains : null,
   };
 }
 
@@ -142,6 +145,7 @@ export async function getCompetitors(
       groupSize: typeof data.group_size === "number" ? data.group_size : 0,
       yourOverall: typeof data.your_overall === "number" ? data.your_overall : null,
       yourAuthority: typeof data.your_authority === "number" ? data.your_authority : null,
+      yourReferringDomains: typeof data.your_referring_domains === "number" ? data.your_referring_domains : null,
       ahead: (Array.isArray(data.ahead) ? data.ahead : []).map(toEntry).filter((e): e is CompetitorEntry => e !== null),
       leader: toEntry(data.leader),
       behind: toEntry(data.behind),
@@ -158,4 +162,54 @@ export async function getCompetitors(
 export function competitiveScore(comparison: BenchmarkComparison | null): number | null {
   const values = Object.values(comparison?.metrics ?? {}).map((m) => m.percentile);
   return values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
+}
+
+export type Backlinks = {
+  authority: number | null;          // 0-100: share of same-extension domains with weaker links
+  authorityRank: number | null;      // 1 = strongest domain of this extension
+  authorityOf: number | null;        // number of domains with this extension in the web graph
+  referringDomains: number | null;   // distinct domains linking to this one (any extension)
+  referringLocal: number | null;     // of which .nl/.be
+  topReferring: { domain: string; authority: number }[];
+  release: string | null;            // Common Crawl web graph release, e.g. cc-main-2026-aug-sep-oct
+};
+
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+/** Link profile from the Common Crawl web graph; null when unavailable or nothing known yet. */
+export async function getBacklinks(url: string): Promise<Backlinks | null> {
+  const key = process.env.BENCHMARK_API_KEY?.trim();
+  if (!key) return null;
+  let domain: string;
+  try {
+    domain = new URL(url).hostname;
+  } catch {
+    return null;
+  }
+  const endpoint = new URL("/api/benchmark/backlinks", process.env.BENCHMARK_API_URL?.trim() || DEFAULT_API);
+  endpoint.searchParams.set("domain", domain);
+  try {
+    const response = await fetch(endpoint, {
+      headers: { "X-Benchmark-Key": key, Accept: "application/json" },
+      signal: AbortSignal.timeout(4_000),
+      next: { revalidate: 3600 },
+    });
+    if (!response.ok) throw new Error(`backlinks API returned ${response.status}`);
+    const data = (await response.json()) as Record<string, unknown>;
+    const result: Backlinks = {
+      authority: num(data.authority),
+      authorityRank: num(data.authority_rank),
+      authorityOf: num(data.authority_of),
+      referringDomains: num(data.referring_domains),
+      referringLocal: num(data.referring_local),
+      topReferring: (Array.isArray(data.top_referring) ? data.top_referring : [])
+        .filter((t): t is { domain: string; authority: number } =>
+          !!t && typeof t.domain === "string" && typeof t.authority === "number"),
+      release: typeof data.release === "string" ? data.release : null,
+    };
+    return result.authority === null && result.referringDomains === null ? null : result;
+  } catch (error) {
+    console.warn("Backlinks unavailable:", error instanceof Error ? error.message : error);
+    return null;
+  }
 }

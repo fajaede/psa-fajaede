@@ -9,9 +9,10 @@ import { RescanButton } from "../../DashboardForms";
 import { ScoreFigures } from "../../ScoreFigures";
 import { deleteProject } from "../../actions";
 import { actionPlan, growthScores, type LatestByKind } from "@/lib/growth-overview";
-import { compareWithBenchmark, competitiveScore, getCompetitors } from "@/lib/benchmark-api";
+import { compareWithBenchmark, competitiveScore, getBacklinks, getCompetitors } from "@/lib/benchmark-api";
 import { CompetitorsCard } from "../../CompetitorsCard";
 import { PositionPlayground } from "../../PositionPlayground";
+import { BacklinksCard } from "../../BacklinksCard";
 import { rankingText } from "@/lib/ranking-text";
 import { normalizeSiteUrl } from "@/lib/url-normalize";
 
@@ -77,10 +78,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   const latest: LatestByKind = Object.fromEntries(summaries.map(({ kind, latest: l }) => [kind, l]));
   const measured = { psa: latest.psa?.score, seo: latest.seo?.score, geo: latest.geo?.score, ai: latest.ai?.score };
-  const [comparison, competitors] = await Promise.all([
+  const [comparison, competitors, backlinks] = await Promise.all([
     compareWithBenchmark(project.url, measured),
     getCompetitors(project.url, measured),
+    getBacklinks(project.url),
   ]);
+  const extension = `.${new URL(project.url).hostname.split(".").pop() ?? "nl"}`;
   const scores = growthScores(latest, competitiveScore(comparison));
   const actions = actionPlan(latest);
   const anyCohort = Object.values(comparison?.metrics ?? {})[0];
@@ -157,6 +160,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           ]}
         />
       )}
+
+      <BacklinksCard backlinks={backlinks} extension={extension} />
 
       <ScoreFigures summaries={summaries} />
 
