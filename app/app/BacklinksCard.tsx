@@ -1,4 +1,5 @@
 import type { Backlinks } from "@/lib/benchmark-api";
+import { cardStyles } from "./card-styles";
 
 const MONTHS: Record<string, string> = {
   jan: "jan", feb: "feb", mar: "mrt", apr: "apr", may: "mei", jun: "jun",
@@ -71,14 +72,9 @@ export function BacklinksCard({ backlinks, extension }: { backlinks: Backlinks |
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: { display: "flex", flexDirection: "column", gap: 12, padding: 20, background: "#111", border: "1px solid #2a2a2a", borderRadius: 16, minWidth: 0 },
-  h2: { margin: 0, fontSize: 16 },
-  h3: { margin: "4px 0 0", fontSize: 14, color: "#f0efec" },
-  muted: { margin: 0, color: "#a8a7a0", fontSize: 14, lineHeight: 1.5 },
-  hint: { color: "#a8a7a0", fontSize: 12 },
+  ...cardStyles,
   big: { fontSize: 30, fontWeight: 800, color: "#f0efec" },
   tile: { display: "flex", flexDirection: "column", gap: 4, padding: 14, background: "#0b0b0b", border: "1px solid #2a2a2a", borderRadius: 12, minWidth: 0 },
-  list: { margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 },
+  list: { ...cardStyles.list, gap: 6 },
   row: { display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", padding: "8px 12px", background: "#0b0b0b", border: "1px solid #222", borderRadius: 10 },
-  domain: { color: "#f0efec", fontWeight: 700, textDecoration: "none", overflowWrap: "anywhere" },
 };

@@ -1,9 +1,10 @@
-// Percentiles from the Fajaede benchmark (api.fajaede.eu/api/benchmark/compare).
-// Compares a site's scores with similar sites (same country and category), e.g.
-// "top 18% van Nederlandse kleine bedrijven / mkb". Returns null when the benchmark
-// is not configured or unreachable: callers then show "Nog geen benchmark", never a guess.
+// Data from the Fajaede benchmark (api.fajaede.eu/api/benchmark/*): percentiles against similar sites
+// (same country and category), competitors, and links from the Common Crawl web graph.
+// Every call returns null when the benchmark is not configured, unreachable or has no data:
+// callers then show "Nog geen benchmark", never a guess.
 
 export type BenchmarkMetric = "psa" | "seo" | "geo" | "ai";
+type Scores = Partial<Record<BenchmarkMetric, number | null | undefined>>;
 
 export type MetricComparison = {
   score: number;
@@ -18,53 +19,6 @@ export type BenchmarkComparison = {
   metrics: Partial<Record<BenchmarkMetric, MetricComparison>>;
   dataAsOf: string | null;
 };
-
-const DEFAULT_API = "https://api.fajaede.eu";
-
-export async function compareWithBenchmark(
-  url: string,
-  scores: Partial<Record<BenchmarkMetric, number | null | undefined>>,
-): Promise<BenchmarkComparison | null> {
-  const key = process.env.BENCHMARK_API_KEY?.trim();
-  if (!key) return null;
-  let domain: string;
-  try {
-    domain = new URL(url).hostname;
-  } catch {
-    return null;
-  }
-  const endpoint = new URL("/api/benchmark/compare", process.env.BENCHMARK_API_URL?.trim() || DEFAULT_API);
-  endpoint.searchParams.set("domain", domain);
-  for (const [metric, value] of Object.entries(scores)) {
-    if (typeof value === "number" && Number.isFinite(value)) endpoint.searchParams.set(metric, String(Math.round(value)));
-  }
-  try {
-    const response = await fetch(endpoint, {
-      headers: { "X-Benchmark-Key": key, Accept: "application/json" },
-      signal: AbortSignal.timeout(4_000),
-      next: { revalidate: 3600 },
-    });
-    if (!response.ok) throw new Error(`benchmark API returned ${response.status}`);
-    const data = (await response.json()) as { metrics?: Record<string, Record<string, unknown>>; data_as_of?: unknown };
-    const metrics: BenchmarkComparison["metrics"] = {};
-    for (const [name, m] of Object.entries(data.metrics ?? {})) {
-      if (!["psa", "seo", "geo", "ai"].includes(name)) continue;
-      if (typeof m.percentile !== "number" || typeof m.group_size !== "number" || typeof m.score !== "number") continue;
-      metrics[name as BenchmarkMetric] = {
-        score: m.score,
-        percentile: m.percentile,
-        topPercent: typeof m.top_percent === "number" ? m.top_percent : Math.max(1, 100 - m.percentile),
-        rank: typeof m.rank === "number" ? m.rank : 0,
-        groupSize: m.group_size,
-        cohortLabel: typeof m.cohort_label === "string" ? m.cohort_label : "websites",
-      };
-    }
-    return { metrics, dataAsOf: typeof data.data_as_of === "string" ? data.data_as_of : null };
-  } catch (error) {
-    console.warn("Benchmark unavailable:", error instanceof Error ? error.message : error);
-    return null;
-  }
-}
 
 export type CompetitorEntry = {
   domain: string;
@@ -88,82 +42,6 @@ export type Competitors = {
   distribution: Record<"overall" | BenchmarkMetric, number[]> | null;   // sites per score 0-100, groups of 30+
 };
 
-function toEntry(raw: unknown): CompetitorEntry | null {
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as { domain?: unknown; overall?: unknown; scores?: unknown; ahead_on?: unknown; authority?: unknown; referring_domains?: unknown };
-  if (typeof r.domain !== "string") return null;
-  return {
-    domain: r.domain,
-    overall: typeof r.overall === "number" ? r.overall : null,
-    scores: (r.scores && typeof r.scores === "object" ? r.scores : {}) as CompetitorEntry["scores"],
-    aheadOn: Array.isArray(r.ahead_on) ? (r.ahead_on as CompetitorEntry["aheadOn"]) : [],
-    authority: typeof r.authority === "number" ? r.authority : null,
-    referringDomains: typeof r.referring_domains === "number" ? r.referring_domains : null,
-  };
-}
-
-function toDistribution(raw: unknown): Competitors["distribution"] {
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Record<string, unknown>;
-  const keys = ["overall", "psa", "seo", "geo", "ai"] as const;
-  const valid = (v: unknown): v is number[] =>
-    Array.isArray(v) && v.length === 101 && v.every((n) => typeof n === "number" && Number.isFinite(n) && n >= 0);
-  if (!keys.every((k) => valid(r[k]))) return null;
-  return Object.fromEntries(keys.map((k) => [k, r[k]])) as Competitors["distribution"];
-}
-
-/** Sites in the same cohort just above you, the leader and where they are ahead; null without data. */
-export async function getCompetitors(
-  url: string,
-  scores: Partial<Record<BenchmarkMetric, number | null | undefined>>,
-): Promise<Competitors | null> {
-  const key = process.env.BENCHMARK_API_KEY?.trim();
-  if (!key) return null;
-  let domain: string;
-  try {
-    domain = new URL(url).hostname;
-  } catch {
-    return null;
-  }
-  const endpoint = new URL("/api/benchmark/competitors", process.env.BENCHMARK_API_URL?.trim() || DEFAULT_API);
-  endpoint.searchParams.set("domain", domain);
-  endpoint.searchParams.set("limit", "3");
-  for (const [metric, value] of Object.entries(scores)) {
-    if (typeof value === "number" && Number.isFinite(value)) endpoint.searchParams.set(metric, String(Math.round(value)));
-  }
-  try {
-    const response = await fetch(endpoint, {
-      headers: { "X-Benchmark-Key": key, Accept: "application/json" },
-      signal: AbortSignal.timeout(4_000),
-      next: { revalidate: 3600 },
-    });
-    if (!response.ok) throw new Error(`competitors API returned ${response.status}`);
-    const data = (await response.json()) as Record<string, unknown>;
-    if (!data.cohort) return null;
-    return {
-      cohortLabel: typeof data.cohort_label === "string" ? data.cohort_label : null,
-      groupSize: typeof data.group_size === "number" ? data.group_size : 0,
-      yourOverall: typeof data.your_overall === "number" ? data.your_overall : null,
-      yourAuthority: typeof data.your_authority === "number" ? data.your_authority : null,
-      yourReferringDomains: typeof data.your_referring_domains === "number" ? data.your_referring_domains : null,
-      ahead: (Array.isArray(data.ahead) ? data.ahead : []).map(toEntry).filter((e): e is CompetitorEntry => e !== null),
-      leader: toEntry(data.leader),
-      behind: toEntry(data.behind),
-      youLead: data.you_lead === true,
-      distribution: toDistribution(data.distribution),
-    };
-  } catch (error) {
-    console.warn("Competitors unavailable:", error instanceof Error ? error.message : error);
-    return null;
-  }
-}
-
-/** Competitive score: the average percentile over the measured metrics (null without data). */
-export function competitiveScore(comparison: BenchmarkComparison | null): number | null {
-  const values = Object.values(comparison?.metrics ?? {}).map((m) => m.percentile);
-  return values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
-}
-
 export type Backlinks = {
   authority: number | null;          // 0-100: share of same-extension domains with weaker links
   authorityRank: number | null;      // 1 = strongest domain of this extension
@@ -174,10 +52,20 @@ export type Backlinks = {
   release: string | null;            // Common Crawl web graph release, e.g. cc-main-2026-aug-sep-oct
 };
 
-const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const DEFAULT_API = "https://api.fajaede.eu";
+const METRICS: readonly BenchmarkMetric[] = ["psa", "seo", "geo", "ai"];
 
-/** Link profile from the Common Crawl web graph; null when unavailable or nothing known yet. */
-export async function getBacklinks(url: string): Promise<Backlinks | null> {
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
+const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
+/** GET a benchmark endpoint for the site at `url`; the parsed JSON object, or null on any problem. */
+async function benchmarkGet(
+  path: string,
+  url: string,
+  params: Record<string, string> = {},
+  scores: Scores = {},
+): Promise<Record<string, unknown> | null> {
   const key = process.env.BENCHMARK_API_KEY?.trim();
   if (!key) return null;
   let domain: string;
@@ -186,30 +74,111 @@ export async function getBacklinks(url: string): Promise<Backlinks | null> {
   } catch {
     return null;
   }
-  const endpoint = new URL("/api/benchmark/backlinks", process.env.BENCHMARK_API_URL?.trim() || DEFAULT_API);
+  const endpoint = new URL(path, process.env.BENCHMARK_API_URL?.trim() || DEFAULT_API);
   endpoint.searchParams.set("domain", domain);
+  for (const [name, value] of Object.entries(params)) endpoint.searchParams.set(name, value);
+  for (const [metric, value] of Object.entries(scores)) {
+    if (typeof value === "number" && Number.isFinite(value)) endpoint.searchParams.set(metric, String(Math.round(value)));
+  }
   try {
     const response = await fetch(endpoint, {
       headers: { "X-Benchmark-Key": key, Accept: "application/json" },
       signal: AbortSignal.timeout(4_000),
       next: { revalidate: 3600 },
     });
-    if (!response.ok) throw new Error(`backlinks API returned ${response.status}`);
-    const data = (await response.json()) as Record<string, unknown>;
-    const result: Backlinks = {
-      authority: num(data.authority),
-      authorityRank: num(data.authority_rank),
-      authorityOf: num(data.authority_of),
-      referringDomains: num(data.referring_domains),
-      referringLocal: num(data.referring_local),
-      topReferring: (Array.isArray(data.top_referring) ? data.top_referring : [])
-        .filter((t): t is { domain: string; authority: number } =>
-          !!t && typeof t.domain === "string" && typeof t.authority === "number"),
-      release: typeof data.release === "string" ? data.release : null,
-    };
-    return result.authority === null && result.referringDomains === null ? null : result;
+    if (!response.ok) throw new Error(`returned ${response.status}`);
+    const data: unknown = await response.json();
+    return isObject(data) ? data : null;
   } catch (error) {
-    console.warn("Backlinks unavailable:", error instanceof Error ? error.message : error);
+    console.warn(`Benchmark ${path} unavailable:`, error instanceof Error ? error.message : error);
     return null;
   }
+}
+
+export async function compareWithBenchmark(url: string, scores: Scores): Promise<BenchmarkComparison | null> {
+  const data = await benchmarkGet("/api/benchmark/compare", url, {}, scores);
+  if (!data) return null;
+  const metrics: BenchmarkComparison["metrics"] = {};
+  for (const [name, m] of Object.entries(isObject(data.metrics) ? data.metrics : {})) {
+    if (!METRICS.includes(name as BenchmarkMetric) || !isObject(m)) continue;
+    const percentile = num(m.percentile), groupSize = num(m.group_size), score = num(m.score);
+    if (percentile === null || groupSize === null || score === null) continue;
+    metrics[name as BenchmarkMetric] = {
+      score,
+      percentile,
+      topPercent: num(m.top_percent) ?? Math.max(1, 100 - percentile),
+      rank: num(m.rank) ?? 0,
+      groupSize,
+      cohortLabel: str(m.cohort_label) ?? "websites",
+    };
+  }
+  return { metrics, dataAsOf: str(data.data_as_of) };
+}
+
+function toEntry(raw: unknown): CompetitorEntry | null {
+  if (!isObject(raw) || typeof raw.domain !== "string") return null;
+  const scores = isObject(raw.scores) ? raw.scores : {};
+  return {
+    domain: raw.domain,
+    overall: num(raw.overall),
+    scores: Object.fromEntries(METRICS.map((m) => [m, num(scores[m])])),
+    aheadOn: (Array.isArray(raw.ahead_on) ? raw.ahead_on : []).filter(
+      (s): s is CompetitorEntry["aheadOn"][number] =>
+        isObject(s) && typeof s.label === "string" && typeof s.difference === "number" && METRICS.includes(s.metric as BenchmarkMetric),
+    ),
+    authority: num(raw.authority),
+    referringDomains: num(raw.referring_domains),
+  };
+}
+
+function toDistribution(raw: unknown): Competitors["distribution"] {
+  if (!isObject(raw)) return null;
+  const keys = ["overall", ...METRICS] as const;
+  const valid = (v: unknown): v is number[] =>
+    Array.isArray(v) && v.length === 101 && v.every((n) => typeof n === "number" && Number.isFinite(n) && n >= 0);
+  if (!keys.every((k) => valid(raw[k]))) return null;
+  return Object.fromEntries(keys.map((k) => [k, raw[k]])) as Competitors["distribution"];
+}
+
+/** Sites in the same cohort just above you, the leader and where they are ahead; null without data. */
+export async function getCompetitors(url: string, scores: Scores): Promise<Competitors | null> {
+  const data = await benchmarkGet("/api/benchmark/competitors", url, { limit: "3" }, scores);
+  if (!data?.cohort) return null;
+  return {
+    cohortLabel: str(data.cohort_label),
+    groupSize: num(data.group_size) ?? 0,
+    yourOverall: num(data.your_overall),
+    yourAuthority: num(data.your_authority),
+    yourReferringDomains: num(data.your_referring_domains),
+    ahead: (Array.isArray(data.ahead) ? data.ahead : []).map(toEntry).filter((e): e is CompetitorEntry => e !== null),
+    leader: toEntry(data.leader),
+    behind: toEntry(data.behind),
+    youLead: data.you_lead === true,
+    distribution: toDistribution(data.distribution),
+  };
+}
+
+/** Link profile from the Common Crawl web graph; null when unavailable or nothing known yet. */
+export async function getBacklinks(url: string): Promise<Backlinks | null> {
+  const data = await benchmarkGet("/api/benchmark/backlinks", url);
+  if (!data) return null;
+  const result: Backlinks = {
+    authority: num(data.authority),
+    authorityRank: num(data.authority_rank),
+    authorityOf: num(data.authority_of),
+    referringDomains: num(data.referring_domains),
+    referringLocal: num(data.referring_local),
+    topReferring: (Array.isArray(data.top_referring) ? data.top_referring : []).filter(
+      (t): t is { domain: string; authority: number } =>
+        isObject(t) && typeof t.domain === "string" && typeof t.authority === "number",
+    ),
+    release: str(data.release),
+  };
+  return result.authority === null && result.referringDomains === null ? null : result;
+}
+
+/** Competitive score: the average percentile over the measured metrics (null without data). */
+export function competitiveScore(comparison: BenchmarkComparison | null): number | null {
+  const values = Object.values(comparison?.metrics ?? {}).map((m) => m.percentile);
+  return values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
 }

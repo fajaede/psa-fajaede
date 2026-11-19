@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { ACCENT, GRID, SERIES_COLORS, SURFACE, TEXT_PRIMARY, TEXT_SECONDARY, useMeasuredWidth } from "@/components/chart-theme";
 import { rankingText } from "@/lib/ranking-text";
+import { cardStyles } from "./card-styles";
 import {
   binned, positionIn, valueOf,
   type Distribution, type SimMetric, type SimScores, type ViewMetric,
@@ -10,7 +12,7 @@ import {
 export type NamedSite = { domain: string; scores: Partial<Record<SimMetric, number | null>>; role: string };
 
 const VIEWS: { key: ViewMetric; label: string }[] = [
-  { key: "overall", label: "Overall" },
+  { key: "overall", label: "Trust + Visibility" },
   { key: "psa", label: "PSA" },
   { key: "seo", label: "SEO" },
   { key: "geo", label: "GEO" },
@@ -23,19 +25,12 @@ const SLIDERS: { key: SimMetric; label: string }[] = [
   { key: "ai", label: "AI-zichtbaarheid" },
 ];
 
-// Same validated palette as ScoreHistoryChart (dark surface #111111).
-const BEATEN = "#3987e5";     // sites scoring below you
-const ABOVE = "#3a3a3a";      // sites scoring above you
-const SITE = "#d4b03a";       // named competitors
-const ACCENT = "#00ff99";     // "what if" marker
-const SURFACE = "#111111";
-const GRID = "#2a2a2a";
-const TEXT_PRIMARY = "#f0efec";
-const TEXT_SECONDARY = "#a8a7a0";
+const BEATEN = SERIES_COLORS[0];   // sites scoring below you
+const ABOVE = "#3a3a3a";           // sites scoring above you (neutral)
+const SITE = SERIES_COLORS[3];     // named competitors
 
 const H = 230;
 const PAD = { top: 30, right: 12, bottom: 28, left: 34 };
-const MIN_WIDTH = 280;
 
 function positionText(p: { rank: number; groupSize: number; percentile: number }): string {
   const r = rankingText(p.percentile);
@@ -49,15 +44,7 @@ export function PositionPlayground({
   const [view, setView] = useState<ViewMetric>("overall");
   const [sim, setSim] = useState<SimScores>(current);
   const [activeBin, setActiveBin] = useState<number | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [W, setW] = useState(680);
-  useEffect(() => {
-    const element = wrapRef.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) => setW(Math.max(MIN_WIDTH, Math.round(entry.contentRect.width))));
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const [wrapRef, W] = useMeasuredWidth(680);
 
   const counts = distribution[view];
   const bins = useMemo(() => binned(counts), [counts]);
@@ -276,9 +263,7 @@ function Legend({ swatch, label }: { swatch: React.ReactNode; label: string }) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: { display: "flex", flexDirection: "column", gap: 12, padding: 20, background: SURFACE, border: "1px solid #2a2a2a", borderRadius: 16, minWidth: 0 },
-  h2: { margin: 0, fontSize: 16 },
-  muted: { margin: 0, color: TEXT_SECONDARY, fontSize: 14, lineHeight: 1.5 },
+  ...cardStyles,
   tab: { background: "transparent", color: TEXT_SECONDARY, border: "1px solid #2a2a2a", borderRadius: 999, padding: "5px 12px", fontSize: 13, cursor: "pointer" },
   tabActive: { background: "#1d1d1d", color: TEXT_PRIMARY, borderColor: "#555" },
   tooltip: { position: "absolute", top: 8, pointerEvents: "none", background: "#0b0b0b", border: "1px solid #333", borderRadius: 8, padding: "8px 10px", fontSize: 12, display: "flex", flexDirection: "column", gap: 2, whiteSpace: "nowrap", zIndex: 1 },

@@ -83,7 +83,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     getCompetitors(project.url, measured),
     getBacklinks(project.url),
   ]);
-  const extension = `.${new URL(project.url).hostname.split(".").pop() ?? "nl"}`;
+  const extension = `.${project.url.replace(/^https?:\/\//, "").split(/[/:?#]/)[0].split(".").pop() || "nl"}`;
   const scores = growthScores(latest, competitiveScore(comparison));
   const actions = actionPlan(latest);
   const anyCohort = Object.values(comparison?.metrics ?? {})[0];

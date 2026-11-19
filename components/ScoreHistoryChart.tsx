@@ -1,22 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { GRID, SERIES_COLORS, SURFACE, TEXT_PRIMARY, TEXT_SECONDARY, useMeasuredWidth } from "./chart-theme";
 
 export type ScorePoint = { t: string; score: number };
 export type ScoreSeries = { key: string; label: string; points: ScorePoint[] };
 
-// Categorical slots 1-3 of the reference palette (dark steps), validated on the
-// #111111 surface: all-pairs CVD ΔE ≥ 9.4, normal-vision ΔE ≥ 20.9, contrast ≥ 3:1.
-// Slot 4 (AI) is a light gold: separated from the orange by lightness, not hue alone.
-const SERIES_COLORS = ["#3987e5", "#d95926", "#199e70", "#d4b03a"];
-
-const SURFACE = "#111111";
-const GRID = "#2a2a2a";
-const TEXT_PRIMARY = "#f0efec";
-const TEXT_SECONDARY = "#a8a7a0";
-
 const DEFAULT_WIDTH = 720;
-const MIN_WIDTH = 280;
 const H = 280;
 const PAD = { top: 16, right: 88, bottom: 32, left: 36 };
 const Y_TICKS = [0, 25, 50, 75, 100];
@@ -29,18 +19,7 @@ const dateTimeFmt = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "s
 export function ScoreHistoryChart({ series }: { series: ScoreSeries[] }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  // Draw at the real pixel width so text stays 12px on phones instead of scaling down.
-  const [W, setW] = useState(DEFAULT_WIDTH);
-  useEffect(() => {
-    const element = wrapRef.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setW(Math.max(MIN_WIDTH, Math.round(entry.contentRect.width)));
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const [wrapRef, W] = useMeasuredWidth(DEFAULT_WIDTH);
 
   const prepared = useMemo(
     () =>
