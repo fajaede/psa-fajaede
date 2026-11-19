@@ -11,6 +11,7 @@ import { deleteProject } from "../../actions";
 import { actionPlan, growthScores, type LatestByKind } from "@/lib/growth-overview";
 import { compareWithBenchmark, competitiveScore, getCompetitors } from "@/lib/benchmark-api";
 import { CompetitorsCard } from "../../CompetitorsCard";
+import { PositionPlayground } from "../../PositionPlayground";
 import { rankingText } from "@/lib/ranking-text";
 import { normalizeSiteUrl } from "@/lib/url-normalize";
 
@@ -143,6 +144,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       </section>
 
       <CompetitorsCard competitors={competitors} />
+
+      {competitors?.distribution && (
+        <PositionPlayground
+          distribution={competitors.distribution}
+          cohortLabel={competitors.cohortLabel ?? "websites"}
+          current={{ psa: measured.psa ?? null, seo: measured.seo ?? null, geo: measured.geo ?? null, ai: measured.ai ?? null }}
+          named={[
+            ...competitors.ahead.map((c) => ({ domain: c.domain, scores: c.scores, role: "net boven je" })),
+            ...(competitors.leader ? [{ domain: competitors.leader.domain, scores: competitors.leader.scores, role: "koploper" }] : []),
+            ...(competitors.behind ? [{ domain: competitors.behind.domain, scores: competitors.behind.scores, role: "net onder je" }] : []),
+          ]}
+        />
+      )}
 
       <ScoreFigures summaries={summaries} />
 
