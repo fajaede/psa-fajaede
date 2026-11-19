@@ -7,7 +7,6 @@ export async function POST(request: Request) {
     const quote = await calculateVatInclusiveQuote({
       product: body.product,
       countryCode: body.countryCode,
-      ipCountryCode: request.headers.get("x-vercel-ip-country"),
       customerType: body.customerType,
       vatNumber: body.vatNumber,
     });

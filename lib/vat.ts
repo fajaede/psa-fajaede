@@ -35,56 +35,25 @@ export function getGrossPriceCents(product: string): number {
   return Math.round(amount * 100);
 }
 
-async function validateVatNumber(countryCode: string, input: string) {
-  const viesCountryCode = countryCode === "GR" ? "EL" : countryCode;
-  const normalized = input.toUpperCase().replace(/[\s.-]/g, "");
-  const number = normalized.startsWith(viesCountryCode)
-    ? normalized.slice(viesCountryCode.length)
-    : normalized.startsWith(countryCode)
-      ? normalized.slice(countryCode.length)
-      : normalized;
-  if (!number || number.length > 20) {
+/** Tidy a VAT number for the invoice (no VIES check: under the small-enterprise exemption it has no tax
+ * effect). Belgian numbers must look like BE0123456789 / BE1234567890, because the invoice goes via Peppol. */
+export function normalizeVatNumber(countryCode: string, input: string): string {
+  const prefix = countryCode === "GR" ? "EL" : countryCode;
+  const compact = input.toUpperCase().replace(/[\s.-]/g, "");
+  const number = compact.startsWith(prefix) ? compact.slice(prefix.length)
+    : compact.startsWith(countryCode) ? compact.slice(countryCode.length) : compact;
+  if (countryCode === "BE" && !/^[01]\d{9}$/.test(number)) {
+    throw new VatQuoteError("Vul een geldig Belgisch btw-nummer in, bijvoorbeeld BE0123456789.", 422);
+  }
+  if (!/^[0-9A-Z]{2,20}$/.test(number)) {
     throw new VatQuoteError("Vul een geldig btw-nummer in.", 422);
   }
-
-  let response: Response;
-  try {
-    response = await fetch("https://ec.europa.eu/taxation_customs/vies/rest-api/check-vat-number", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ countryCode: viesCountryCode, vatNumber: number }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(8000),
-    });
-  } catch {
-    throw new VatQuoteError("VIES is tijdelijk niet bereikbaar. Probeer het later opnieuw.", 503);
-  }
-
-  if (!response.ok) {
-    throw new VatQuoteError("VIES is tijdelijk niet bereikbaar. Probeer het later opnieuw.", 503);
-  }
-
-  const result = await response.json();
-  const valid = typeof result.valid === "boolean" ? result.valid : result.isValid;
-  if (typeof valid !== "boolean") {
-    throw new VatQuoteError("VIES kon het btw-nummer nu niet bevestigen. Probeer het later opnieuw.", 503);
-  }
-  if (!valid) {
-    throw new VatQuoteError("Dit btw-nummer is niet geldig volgens VIES.", 422);
-  }
-
-  return {
-    vatNumber: `${viesCountryCode}${number}`,
-    vatNumberValid: true,
-    vatCheckedAt: typeof result.requestDate === "string" ? result.requestDate : new Date().toISOString(),
-    vatRequestId: typeof result.requestIdentifier === "string" ? result.requestIdentifier : null,
-  };
+  return `${prefix}${number}`;
 }
 
 export async function calculateVatInclusiveQuote(input: {
   product: string;
   countryCode: string;
-  ipCountryCode?: string | null;
   customerType: CustomerType;
   vatNumber?: string;
 }): Promise<VatDetails> {
@@ -100,41 +69,30 @@ export async function calculateVatInclusiveQuote(input: {
   }
 
   const grossAmountCents = getGrossPriceCents(input.product);
-  const isEuCountry = Object.hasOwn(EU_VAT_RATES_BPS, countryCode);
-  const detectedIpCountry = input.ipCountryCode?.trim().toUpperCase() ?? "";
-  const ipCountryCode = countries.isValid(detectedIpCountry) && detectedIpCountry.length === 2
-    ? detectedIpCountry
-    : null;
-
+  // Business details are only for the invoice. A Belgian business needs its VAT number (Peppol);
+  // for other businesses it is optional. No VIES check and no IP location: no VAT depends on them.
   let vatNumber: string | null = null;
-  let vatNumberValid: boolean | null = null;
-  let vatCheckedAt: string | null = null;
-  let vatRequestId: string | null = null;
-
-  if (input.customerType === "business" && isEuCountry) {
-    if (!input.vatNumber?.trim()) {
-      throw new VatQuoteError("Een EU-btw-nummer is verplicht voor zakelijke EU-bestellingen.", 422);
+  if (input.customerType === "business") {
+    const given = input.vatNumber?.trim() ?? "";
+    if (countryCode === "BE" && !given) {
+      throw new VatQuoteError("Vul het btw-nummer van je bedrijf in (nodig voor de factuur via Peppol).", 422);
     }
-    const validation = await validateVatNumber(countryCode, input.vatNumber);
-    vatNumber = validation.vatNumber;
-    vatNumberValid = validation.vatNumberValid;
-    vatCheckedAt = validation.vatCheckedAt;
-    vatRequestId = validation.vatRequestId;
+    if (given) vatNumber = normalizeVatNumber(countryCode, given);
   }
 
   // Small-enterprise VAT exemption (lib/vat-exemption.ts): no VAT for anyone. The country, the business
-  // details and the VIES-checked VAT number are still collected for the invoice and the Peppol route.
+  // details are still collected for the invoice and the Peppol route.
   const vatRateBasisPoints = 0;
   const vatAmountCents = 0;
 
   return {
     countryCode,
-    ipCountryCode,
+    ipCountryCode: null,     // no longer collected (only needed for VAT per country before the exemption)
     customerType: input.customerType,
     vatNumber,
-    vatNumberValid,
-    vatCheckedAt,
-    vatRequestId,
+    vatNumberValid: null,    // no VIES check any more
+    vatCheckedAt: null,
+    vatRequestId: null,
     calculatedAt: new Date().toISOString(),
     vatRateBasisPoints,
     netAmountCents: grossAmountCents - vatAmountCents,

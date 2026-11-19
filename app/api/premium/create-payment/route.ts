@@ -19,7 +19,6 @@ export async function POST(request: Request) {
     const taxDetails = await calculateVatInclusiveQuote({
       product: tier,
       countryCode,
-      ipCountryCode: request.headers.get("x-vercel-ip-country"),
       customerType,
       vatNumber,
     });
