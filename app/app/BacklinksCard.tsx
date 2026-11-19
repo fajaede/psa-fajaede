@@ -39,8 +39,8 @@ export function BacklinksCard({ backlinks, extension }: { backlinks: Backlinks |
           <span style={styles.hint}>
             {authority === null ? "Nog niet bekend"
               : authorityRank !== null && authorityOf !== null
-                ? `Plek ${nf(authorityRank)} van ${nf(authorityOf)} ${extension}-domeinen`
-                : `Sterker dan ${authority}% van de ${extension}-domeinen`}
+                ? `Plek ${nf(authorityRank)} van ${nf(authorityOf)} ${extension}-sites met links`
+                : authority === 0 ? "Nog geen links gevonden" : `Sterker dan ${authority}% van de ${extension}-sites met links`}
           </span>
         </div>
       </div>
