@@ -151,3 +151,21 @@ main { overflow-x: hidden; }
     background: rgba(255, 255, 255, 0.06); border: 1px solid #333; color: #eee; font: inherit; font-weight: 600; cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { .mm-trigger svg { transition: none !important; } }
+
+/* ---- Shared site header (components/SiteHeader.tsx) ---- */
+.siteHeader { position: relative; z-index: 100; width: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+.siteHeader-hero { max-width: 1200px; }
+.siteHeader-bar { background: #070709; border-bottom: 1px solid #1f1f24; padding: 0 16px; box-sizing: border-box; }
+.siteHeader-bar .siteHeader-inner { max-width: 1200px; margin: 0 auto; }
+.siteHeader-inner { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+.siteHeader-logo { font-weight: 900; font-size: 24px; letter-spacing: -1px; text-decoration: none; }
+.siteHeader-bar .siteHeader-logo { font-size: 20px; }
+.siteHeader-nav { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+.siteHeader-login { display: inline-block; color: #fff; border: 1px solid #555; padding: 10px 20px; border-radius: 8px;
+  font-weight: 600; font-size: 14px; text-decoration: none; }
+.siteHeader-login:hover { border-color: #888; }
+.siteHeader-logo:focus-visible, .siteHeader-login:focus-visible { outline: 2px solid #00ff99; outline-offset: 3px; border-radius: 6px; }
+.siteHeader-bar .mm-panel { top: calc(100% + 4px); }
+@media (max-width: 640px) {
+  .siteHeader-nav { gap: 16px; }
+}

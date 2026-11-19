@@ -22,7 +22,6 @@ type ReportData = {
 };
 
 export default function ReportClient({ report }: { report: ReportData }) {
-  const [isCoreOpen, setIsCoreOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState("");
 
@@ -51,61 +50,8 @@ export default function ReportClient({ report }: { report: ReportData }) {
         padding: "0 16px 64px 16px",
       }}
     >
-      {/* FajaedeAI Core Header (Exact overgenomen van de homepagina) */}
-      <header style={{ position: "relative", zIndex: 100, width: "100%", maxWidth: 1200, display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "space-between", alignItems: "center", padding: "24px 0 64px 0" }}>
-        <Link href="/" style={{ textDecoration: "none" }}>
-          <div style={{ fontWeight: 900, fontSize: 24, color: "#fff", letterSpacing: -1, cursor: "pointer" }}>
-            fajaede<span style={{ color: "#ffdd00" }}>AI</span>
-          </div>
-        </Link>
-        <nav style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          <div 
-            onMouseEnter={() => setIsCoreOpen(true)}
-            onMouseLeave={() => setIsCoreOpen(false)}
-            style={{ position: "relative", cursor: "pointer", padding: "10px 0" }}
-          >
-            <span style={{ color: isCoreOpen ? "#fff" : "#ccc", fontWeight: 600, display: "flex", alignItems: "center", gap: 6, transition: "color 0.2s" }}>
-              FajaedeAI Core
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isCoreOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><path d="M6 9l6 6 6-6"/></svg>
-            </span>
-            {isCoreOpen && (
-              <div style={{
-                position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
-                background: "rgba(10, 10, 10, 0.95)", border: "1px solid #333", borderRadius: 16, padding: "24px",
-                width: "90vw", maxWidth: 820, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.8)", zIndex: 50, backdropFilter: "blur(10px)"
-              }}>
-                <div>
-                  <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Intelligence Engines</h4>
-                  <DropdownItem icon="🧠" title="AI & Search Engine" href="/search" />
-                  <DropdownItem icon="🔍" title="SEO & Audit Engine" />
-                  <DropdownItem icon="📊" title="SERP Intelligence" />
-                  <DropdownItem icon="🛡️" title="PSA Certification" color="#ffdd00" />
-                </div>
-                <div>
-                  <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Tools & Automation</h4>
-                  <DropdownItem icon="⚡" title="Bulk Meta & Audits" />
-                  <DropdownItem icon="🏗️" title="Website & Schema Gen" />
-                  <DropdownItem icon="📄" title="White Label Reports" />
-                  <DropdownItem icon="📈" title="Multi-site Dashboard" />
-                  <DropdownItem icon="🧹" title="Fajaede Privacy Cleaner" href="https://www.fajaede.nl/fajaede-privacy-cleaner-optimale-browser-opschoning/" />
-                </div>
-                <div>
-                  <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Data & Assistants</h4>
-                  <DropdownItem icon="🕸️" title="Eigen Crawler & Index" />
-                  <DropdownItem icon="⚔️" title="Competitor Analysis" />
-                  <DropdownItem icon="🔗" title="Link Manager" />
-                  <DropdownItem icon="🤖" title="AI Chatbot Assistant" />
-                </div>
-
-              </div>
-            )}
-          </div>
-        </nav>
-        <div>
-          <button style={{ background: "transparent", color: "#fff", border: "1px solid #555", padding: "10px 20px", borderRadius: 8, fontWeight: 600, cursor: "pointer", fontSize: 14 }}>Login</button>
-        </div>
-      </header>
+      {/* the site header comes from the root layout (components/SiteHeader.tsx) */}
+      <div style={{ height: 40 }} />
 
       {/* HET OFFICIELE RAPPORT */}
       <section style={{ maxWidth: 720, width: "100%" }}>
@@ -287,25 +233,3 @@ function ScoreBox({ label, score, note }: { label: string; score: string | numbe
   );
 }
 
-function DropdownItem({ icon, title, color = "#eee", href = "#" }: { icon: string; title: string; color?: string; href?: string }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const isExternal = href.startsWith("http");
-
-  return (
-    <a href={href} 
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noopener noreferrer" : undefined}
-      style={{
-        display: "flex", alignItems: "center", gap: 14, padding: "10px 20px",
-        color, textDecoration: "none", fontSize: 15, fontWeight: 500,
-        background: isHovered ? "rgba(255,255,255,0.05)" : "transparent",
-        transition: "background 0.2s"
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{icon}</span>
-      {title}
-    </a>
-  );
-}

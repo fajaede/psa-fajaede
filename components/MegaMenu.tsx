@@ -55,7 +55,7 @@ const COLUMNS: { title: string; items: Item[] }[] = [
 ];
 
 /** "Producten" mega menu: opens on hover (mouse) and on click/Enter (touch, keyboard); Escape closes. */
-export function MegaMenu({ onScan }: { onScan: (mode: ScanMode) => void }) {
+export function MegaMenu({ onScan }: { onScan?: (mode: ScanMode) => void }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -118,7 +118,8 @@ export function MegaMenu({ onScan }: { onScan: (mode: ScanMode) => void }) {
             <ul className="mm-list">
               {column.items.map((item) => (
                 <li key={item.title}>
-                  <MenuLink item={item} onScan={(mode) => { setOpen(false); onScan(mode); }} onNavigate={() => setOpen(false)} />
+                  <MenuLink item={item} onScan={onScan ? (mode) => { setOpen(false); onScan(mode); } : undefined}
+                    onNavigate={() => setOpen(false)} />
                 </li>
               ))}
             </ul>
@@ -129,7 +130,7 @@ export function MegaMenu({ onScan }: { onScan: (mode: ScanMode) => void }) {
   );
 }
 
-function MenuLink({ item, onScan, onNavigate }: { item: Item; onScan: (mode: ScanMode) => void; onNavigate: () => void }) {
+function MenuLink({ item, onScan, onNavigate }: { item: Item; onScan?: (mode: ScanMode) => void; onNavigate: () => void }) {
   const body = (
     <>
       <span className="mm-icon" aria-hidden="true">{item.icon}</span>
@@ -141,6 +142,10 @@ function MenuLink({ item, onScan, onNavigate }: { item: Item; onScan: (mode: Sca
   );
   if (item.scan) {
     const mode = item.scan;
+    if (!onScan) {
+      // on other pages: open the homepage with this scan selected (app/page.tsx reads ?scan=)
+      return <a href={`/?scan=${mode}#scan`} className="mm-link" onClick={onNavigate}>{body}</a>;
+    }
     return (
       <a href="#scan" className="mm-link" onClick={(event) => { event.preventDefault(); onScan(mode); }}>
         {body}
