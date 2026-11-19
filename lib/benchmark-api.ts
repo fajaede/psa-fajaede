@@ -81,6 +81,7 @@ export type Competitors = {
   leader: CompetitorEntry | null;
   behind: CompetitorEntry | null;
   youLead: boolean;
+  distribution: Record<"overall" | BenchmarkMetric, number[]> | null;   // sites per score 0-100, groups of 30+
 };
 
 function toEntry(raw: unknown): CompetitorEntry | null {
@@ -93,6 +94,16 @@ function toEntry(raw: unknown): CompetitorEntry | null {
     scores: (r.scores && typeof r.scores === "object" ? r.scores : {}) as CompetitorEntry["scores"],
     aheadOn: Array.isArray(r.ahead_on) ? (r.ahead_on as CompetitorEntry["aheadOn"]) : [],
   };
+}
+
+function toDistribution(raw: unknown): Competitors["distribution"] {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const keys = ["overall", "psa", "seo", "geo", "ai"] as const;
+  const valid = (v: unknown): v is number[] =>
+    Array.isArray(v) && v.length === 101 && v.every((n) => typeof n === "number" && Number.isFinite(n) && n >= 0);
+  if (!keys.every((k) => valid(r[k]))) return null;
+  return Object.fromEntries(keys.map((k) => [k, r[k]])) as Competitors["distribution"];
 }
 
 /** Sites in the same cohort just above you, the leader and where they are ahead; null without data. */
@@ -131,6 +142,7 @@ export async function getCompetitors(
       leader: toEntry(data.leader),
       behind: toEntry(data.behind),
       youLead: data.you_lead === true,
+      distribution: toDistribution(data.distribution),
     };
   } catch (error) {
     console.warn("Competitors unavailable:", error instanceof Error ? error.message : error);
