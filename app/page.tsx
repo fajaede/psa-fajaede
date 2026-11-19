@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { MegaMenu } from "@/components/MegaMenu";
 import { useRouter } from "next/navigation";
 import { Turnstile, type TurnstileHandle } from "@/components/Turnstile";
 import { rankingText } from "@/lib/ranking-text";
@@ -67,7 +68,6 @@ export default function Home() {
   const turnstileRef = React.useRef<TurnstileHandle>(null);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
-  const [isCoreOpen, setIsCoreOpen] = useState(false);
   const [scanMode, setScanMode] = useState<"psa" | "seo" | "geo">("psa");
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
@@ -164,6 +164,13 @@ export default function Home() {
     }
   };
 
+  // Menu items "PSA-scan", "SEO-scan" ... pick the scan and bring the URL field into view.
+  const startScan = (mode: "psa" | "seo" | "geo") => {
+    setScanMode(mode);
+    document.getElementById("scan")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.querySelector<HTMLInputElement>(".searchForm input[type=url]")?.focus({ preventScroll: true });
+  };
+
   return (
     <main
       style={{
@@ -209,55 +216,11 @@ export default function Home() {
           <span style={{ color: "#fff" }}>FajaedeAI</span><span style={{ color: "#ffdd00" }}> Core</span>
         </div>
         
-        <nav style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {/* FajaedeAI Core Dropdown */}
-          <div 
-            onMouseEnter={() => setIsCoreOpen(true)}
-            onMouseLeave={() => setIsCoreOpen(false)}
-            style={{ position: "relative", cursor: "pointer", padding: "10px 0" }}
-          >
-            <span style={{ color: isCoreOpen ? "#fff" : "#ccc", fontWeight: 600, display: "flex", alignItems: "center", gap: 6, transition: "color 0.2s" }}>
-              FajaedeAI Core
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: isCoreOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><path d="M6 9l6 6 6-6"/></svg>
-            </span>
-            
-            {/* Dropdown Menu */}
-            {isCoreOpen && (
-              <div className="coreDropdown" style={{
-                position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
-                background: "rgba(10, 10, 10, 0.95)", border: "1px solid #333", borderRadius: 16, padding: "24px",
-                width: "90vw", maxWidth: 820, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px",
-                boxShadow: "0 20px 40px rgba(0,0,0,0.8)", zIndex: 50, backdropFilter: "blur(10px)"
-              }}>
-                <div>
-                  <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Intelligence Engines</h4>
-                  <DropdownItem icon="🧠" title="AI & Search Engine" href="https://fajaede-search-frontend.vercel.app" target="_blank" rel="noopener noreferrer" />
-                  <DropdownItem icon="🔍" title="SEO & Audit Engine" />
-                  <DropdownItem icon="📊" title="SERP Intelligence" />
-                  <DropdownItem icon="🛡️" title="PSA Certification" color="#ffdd00" />
-                </div>
-                <div>
-                  <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Tools & Automation</h4>
-                  <DropdownItem icon="🚀" title="FajaedeSEO AI" color="#00ff99" href="https://www.fajaede.nl/download" />
-                  <DropdownItem icon="⚡" title="Bulk Meta & Audits" />
-                  <DropdownItem icon="🏗️" title="Website & Schema Gen" />
-                  <DropdownItem icon="📄" title="White Label Reports" />
-                  <DropdownItem icon="📈" title="Multi-site Dashboard" />
-                  <DropdownItem icon="🧹" title="Fajaede Privacy Cleaner" href="https://www.fajaede.nl/fajaede-privacy-cleaner-optimale-browser-opschoning/" />
-                </div>
-                <div>
-                  <h4 style={{ color: "#888", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, margin: "0 0 12px 16px" }}>Data & Assistants</h4>
-                  <DropdownItem icon="🕸️" title="Eigen Crawler & Index" />
-                  <DropdownItem icon="⚔️" title="Competitor Analysis" />
-                  <DropdownItem icon="🔗" title="Link Manager" />
-                  <DropdownItem icon="🤖" title="AI Chatbot Assistant" />
-                </div>
-              </div>
-            )}
-          </div>
-          
-<a href="/price" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Pricing</a>
-        <a href="#" style={{ color: '#fff', textDecoration: 'none', fontWeight: 500, transition: 'color 0.3s' }} onMouseEnter={(e) => { e.currentTarget.style.color = '#00ff99'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}>Agency</a>
+        <nav aria-label="Hoofdmenu" style={{ display: "flex", gap: 28, alignItems: "center", flexWrap: "wrap" }}>
+          <MegaMenu onScan={startScan} />
+          <a href="/price" className="topLink">Prijzen</a>
+          <a href="/app" className="topLink">Dashboard</a>
+          <a href="https://www.fajaede.nl/welkom-bij-fajaede-lab/" className="topLink" target="_blank" rel="noopener noreferrer">Community</a>
         </nav>
         
         <div>
@@ -294,7 +257,7 @@ export default function Home() {
         </p>
 
         {/* Multi-Tool Tab Switcher */}
-        <div className="scanModeTabs" style={{ display: "inline-flex", gap: 8, background: "rgba(255,255,255,0.05)", padding: 6, borderRadius: 999, marginBottom: 16, position: "relative", zIndex: 10, border: "1px solid #333", backdropFilter: "blur(10px)" }}>
+        <div id="scan" className="scanModeTabs" style={{ display: "inline-flex", gap: 8, background: "rgba(255,255,255,0.05)", padding: 6, borderRadius: 999, marginBottom: 16, position: "relative", zIndex: 10, border: "1px solid #333", backdropFilter: "blur(10px)" }}>
             <button className="tabBtn" onClick={() => setScanMode("psa")} style={{ padding: "12px 24px", borderRadius: 999, border: "none", background: scanMode === "psa" ? "#ff0000" : "transparent", color: scanMode === "psa" ? "#fff" : "#aaa", fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontSize: 14 }}>
               <span className="tabIcon" aria-hidden="true">🛡️</span><span className="tabBtnContent"><span className="tabBtnLabel">PSA Trust</span><span className="tabBtnDescription">Privacy, beveiliging en leeftijdsrisico</span></span>
             </button>
@@ -776,30 +739,5 @@ function UrlReputationNotice({ reputation }: { reputation: NonNullable<ScanResul
       <strong>Phishing/malware check:</strong> {message}
       {reputation.threatTypes.length > 0 && <span> Detectie: {reputation.threatTypes.join(", ")}.</span>}
     </div>
-  );
-}
-
-function DropdownItem({ icon, title, color = "#eee", href = "#", target, rel }: { icon: string; title: string; color?: string; href?: string; target?: string; rel?: string }) {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  // Check of de link extern is, zodat we hem veilig in een nieuw tabblad kunnen openen
-  const isExternal = href.startsWith("http");
-
-  return (
-    <a href={href} 
-      target={target ?? (isExternal ? "_blank" : undefined)}
-      rel={rel ?? (isExternal ? "noopener noreferrer" : undefined)}
-      style={{
-        display: "flex", alignItems: "center", gap: 14, padding: "10px 20px",
-        color, textDecoration: "none", fontSize: 15, fontWeight: 500,
-        background: isHovered ? "rgba(255,255,255,0.05)" : "transparent",
-        transition: "background 0.2s"
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{icon}</span>
-      {title}
-    </a>
   );
 }
