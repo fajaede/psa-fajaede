@@ -69,6 +69,7 @@ function Row({ entry, yourAuthority }: { entry: CompetitorEntry; yourAuthority: 
         {[
           ...Object.entries(entry.scores).map(([k, v]) => `${METRIC_SHORT[k] ?? k} ${v ?? "–"}`),
           ...(entry.authority !== null ? [`Autoriteit ${entry.authority}`] : []),
+          ...(entry.referringDomains !== null ? [`${entry.referringDomains.toLocaleString("nl-NL")} verwijzende domeinen`] : []),
         ].join(" · ")}
       </span>
       {ahead.length > 0 && (
