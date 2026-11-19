@@ -242,10 +242,10 @@ export default function ReportClient({ report }: { report: ReportData }) {
                     product="PSA_LICENSE"
                     paymentEndpoint="/api/checkout"
                     paymentData={{ urlHash: report.urlHash || "", email: email.trim() }}
-                    buttonLabel="Bereken btw en totaal"
+                    buttonLabel="Bekijk totaal en ga verder"
                     disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !report.urlHash}
                   />
-                  <p style={{ color: "#888", fontSize: 12, margin: 0 }}>€9 per jaar, inclusief btw.</p>
+                  <p style={{ color: "#888", fontSize: 12, margin: 0 }}>€9 per jaar, geen btw (vrijstellingsregeling kleine ondernemingen).</p>
                 </div>
               ) : (
                 <div style={{ padding: "16px", background: "rgba(255, 77, 79, 0.1)", border: "1px solid rgba(255, 77, 79, 0.3)", borderRadius: 8, color: "#ffcccc", textAlign: "center" }}>

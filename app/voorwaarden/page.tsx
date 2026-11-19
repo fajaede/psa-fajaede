@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Algemene voorwaarden" updated="18 november 2026">
+    <LegalPage title="Algemene voorwaarden" updated="19 november 2026">
       <Section title="1. Wie zijn wij en wanneer gelden deze voorwaarden?">
         <p style={s.p}>psa.fajaede.nl is een dienst van:</p>
         <CompanyBlock />
@@ -65,14 +65,13 @@ export default function TermsPage() {
       <Section title="4. Prijzen en betaling">
         <ul style={s.ul}>
           <li>
-            De prijzen staan bij het product en worden vóór het betalen getoond, inclusief btw en uitgesplitst naar
-            bedrag exclusief btw en btw.
+            De prijzen staan bij het product en worden vóór het betalen getoond. Het getoonde bedrag is de eindprijs.
           </li>
           <li>
-            Particulieren in de EU betalen de btw van hun land. Bedrijven uit een andere EU-lidstaat met een geldig
-            btw-nummer betalen de prijs exclusief btw; de btw wordt verlegd naar de afnemer (artikel 196 van Richtlijn
-            2006/112/EG). Btw-nummers controleren wij via VIES. Belgische bedrijven betalen de prijs inclusief Belgische
-            btw. U bent verantwoordelijk voor de juistheid van de opgegeven gegevens.
+            fajaede valt onder de bijzondere vrijstellingsregeling van belastingplichtige kleine ondernemingen en rekent
+            geen btw aan, aan particulieren noch aan bedrijven, in België en daarbuiten. Er is dus ook geen btw die u
+            kunt aftrekken. Btw-nummers van bedrijven controleren wij via VIES, zodat de factuur op de juiste naam
+            staat. U bent verantwoordelijk voor de juistheid van de opgegeven gegevens.
           </li>
           <li>
             Betalingen verlopen via onze betaaldienstverlener Mollie. Wij ontvangen geen kaart- of bankgegevens. Koopt u

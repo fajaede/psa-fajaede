@@ -29,7 +29,8 @@ export const EU_VAT_RATES_BPS: Record<string, number> = {
 };
 
 export type CustomerType = "consumer" | "business";
-export type VatTreatment = "domestic-vat" | "oss-b2c" | "reverse-charge" | "outside-eu";
+// "exempt" = small-enterprise VAT exemption (all sales from 19 November 2026); the others only on older orders.
+export type VatTreatment = "exempt" | "domestic-vat" | "oss-b2c" | "reverse-charge" | "outside-eu";
 
 export interface VatDetails {
   countryCode: string;

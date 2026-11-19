@@ -73,7 +73,7 @@ export default function PricePage() {
         {tiers.map((t) => (
           <div key={t.tierKey} style={styles.card}>
             <h2 style={styles.cardTitle}>{t.name}</h2>
-            {t.price > 0 && <p style={styles.price}>€{t.price} <span style={styles.vatNote}>incl. btw</span></p>}
+            {t.price > 0 && <p style={styles.price}>€{t.price} <span style={styles.vatNote}>geen btw</span></p>}
             <p style={styles.desc}>{t.description}</p>
             <button
               style={selectedTier === t.tierKey ? { ...styles.button, ...styles.selectedButton } : styles.button}
@@ -87,7 +87,7 @@ export default function PricePage() {
       {selectedTier && (
         <section style={styles.checkout}>
           <h2 style={styles.cardTitle}>Factuurgegevens</h2>
-          <p style={styles.desc}>De pakketprijs is inclusief btw. Het exacte btw-bedrag hangt af van je land en klanttype.</p>
+          <p style={styles.desc}>De pakketprijs is de eindprijs, voor particulieren en bedrijven: fajaede rekent geen btw aan (bijzondere vrijstellingsregeling kleine ondernemingen). Bedrijven vullen hun gegevens in voor de factuur.</p>
           <VatCheckout
             product={selectedTier}
             paymentEndpoint="/api/premium/create-payment"
@@ -97,7 +97,7 @@ export default function PricePage() {
               scanMode: scanMode ?? "seo",
               scanUrl: scanUrl.trim(),
             }}
-            buttonLabel="Bereken btw en totaal"
+            buttonLabel="Bekijk totaal en ga verder"
             disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !/^(https?:\/\/)?[^\s/.]+\.[^\s]{2,}/i.test(scanUrl.trim())}
           />
         </section>

@@ -10,6 +10,7 @@ import { invoiceFilename, renderInvoicePdf } from "@/lib/invoice-pdf";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { VatDetails } from "@/lib/vat-rates";
+import { EXEMPTION_LIMIT_CENTS, EXEMPTION_NOTE } from "@/lib/vat-exemption";
 
 const TIME_ZONE = "Europe/Brussels";
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -71,17 +72,22 @@ type SaleRow = {
   paidAt: Date;
 };
 
-function toRow(sale: SaleRow, invoiceNumber = ""): string[] {
+type InvoicedAmounts = { number: string; netCents: number; vatCents: number; grossCents: number;
+  vatRateBasisPoints: number; reverseCharge: boolean; treatment: string | null };
+
+function toRow(sale: SaleRow, invoice?: InvoicedAmounts): string[] {
+  const invoiceNumber = invoice?.number ?? "";
   const tax = asVatDetails(sale.taxDetails);
   const hasTax = Boolean(tax && typeof tax.grossAmountCents === "number");
-  // Fallback without a stored VAT quote: Belgian 21% included in the paid amount.
-  const gross = hasTax ? tax!.grossAmountCents! : sale.amountCents;
-  const vat = hasTax ? tax!.vatAmountCents ?? 0 : Math.round(gross - gross / 1.21);
-  const net = hasTax ? tax!.netAmountCents ?? gross - vat : gross - vat;
-  const basisPoints = hasTax ? tax!.vatRateBasisPoints ?? 0 : 2100;
+  // The invoice as issued wins (no VAT under the small-enterprise exemption). Without an invoice:
+  // the stored quote, or else Belgian 21% included in the paid amount (sales from before the exemption).
+  const gross = invoice ? invoice.grossCents : hasTax ? tax!.grossAmountCents! : sale.amountCents;
+  const vat = invoice ? invoice.vatCents : hasTax ? tax!.vatAmountCents ?? 0 : Math.round(gross - gross / 1.21);
+  const net = invoice ? invoice.netCents : hasTax ? tax!.netAmountCents ?? gross - vat : gross - vat;
+  const basisPoints = invoice ? invoice.vatRateBasisPoints : hasTax ? tax!.vatRateBasisPoints ?? 0 : 2100;
   const countryCode = tax?.countryCode ?? "";
   const isBusiness = tax?.customerType === "business";
-  const reverseCharge = tax?.treatment === "reverse-charge";
+  const reverseCharge = invoice ? invoice.reverseCharge : tax?.treatment === "reverse-charge";
   const ossColumn = isBusiness ? "Nee" : !countryCode ? "Onbekend" : tax?.treatment === "oss-b2c" ? "Ja" : "Nee";
 
   return [
@@ -114,10 +120,28 @@ export async function collectRows(since: Date, until: Date): Promise<string[][]>
   });
   const invoices = await prisma.invoice.findMany({
     where: { paymentId: { in: sales.map((s) => s.paymentId) } },
-    select: { paymentId: true, number: true },
+    select: { paymentId: true, number: true, netCents: true, vatCents: true, grossCents: true,
+      vatRateBasisPoints: true, reverseCharge: true, treatment: true },
   });
-  const numbers = new Map(invoices.map((i) => [i.paymentId, i.number]));
-  return sales.map((sale) => toRow(sale, numbers.get(sale.paymentId) ?? ""));
+  const byPayment = new Map(invoices.map((i) => [i.paymentId, i]));
+  return sales.map((sale) => toRow(sale, byPayment.get(sale.paymentId)));
+}
+
+/** psa sales (live) from 1 January of the year of `until` up to `until`, in cents. */
+export async function yearToDateCents(until: Date): Promise<number> {
+  const since = new Date(Date.UTC(Number(localParts(until).year), 0, 1) - 2 * 3600 * 1000); // covers Brussels midnight
+  const rows = await collectRows(since, until);
+  return rows
+    .filter((row) => row[12].slice(6, 10) === String(localParts(until).year))   // paid in this local year
+    .reduce((sum, row) => sum + Math.round(Number(row[10].replace(",", ".")) * 100), 0);
+}
+
+/** Report line: this channel's turnover against the exemption limit (which counts all channels). */
+export function exemptionLine(totalCents: number): string {
+  const share = Math.floor((totalCents * 100) / EXEMPTION_LIMIT_CENTS);
+  return `- Omzet psa.fajaede.nl dit jaar: EUR ${money(totalCents)} (${share}% van de vrijstellingsgrens van EUR 25.000;\n`
+    + "  die grens geldt voor psa.fajaede.nl, de FajaedeSEO-plugin en fajaede.eu samen).\n"
+    + (share >= 80 ? "  LET OP: boven 80% van de grens, overleg met de boekhouder.\n" : "");
 }
 
 /** ZIP with the PDF of every live website invoice (PSA-...) issued in [since, until). */
@@ -202,7 +226,9 @@ export async function sendReport(since: Date, until: Date, recipients: string[] 
     "Zelfde kolommen als het weekrapport van fajaede.eu en de FajaedeSEO-plugin.\n" +
     "- PSA-JJJJ-NNNN: factuur die de website zelf verstuurt (particulieren, buitenlandse bedrijven, buiten de EU).\n" +
     "- PEPPOL-NNNN: Belgisch bedrijf; die factuur wordt via Peppol vanuit het boekhoudprogramma verstuurd.\n" +
-    "- Bij EU-bedrijven buiten België is de btw verlegd.\n" +
+    `- Btw: fajaede valt onder de ${EXEMPTION_NOTE.toLowerCase()}. Nieuwe facturen hebben geen btw;\n` +
+    "  verkopen van daarvoor tonen hun oude btw.\n" +
+    exemptionLine(await yearToDateCents(until)) +
     "- Testbetalingen (Mollie testmodus) zijn niet opgenomen.\n";
   for (const recipient of to) {
     await sendMail({
