@@ -103,14 +103,14 @@ export function VatCheckout({
             <option value="business">Bedrijf (B2B)</option>
           </select>
         </label>
-        {customerType === "business" && euCountry && (
+        {customerType === "business" && (
           <label style={styles.label}>
-            EU-btw-nummer
+            {countryCode === "BE" ? "Btw-nummer" : "Btw-nummer (optioneel)"}
             <input
               autoComplete="off"
               value={vatNumber}
               onChange={(event) => setVatNumber(event.target.value)}
-              placeholder={countryCode === "BE" ? "BE0123456789" : `${countryCode === "GR" ? "EL" : countryCode}...`}
+              placeholder={countryCode === "BE" ? "BE0123456789" : euCountry ? `${countryCode === "GR" ? "EL" : countryCode}...` : "Voor op je factuur"}
               style={styles.input}
             />
           </label>
@@ -147,7 +147,6 @@ export function VatCheckout({
         <dl style={styles.breakdown} aria-live="polite">
           <div style={{ ...styles.row, ...styles.total }}><dt>Totaal te betalen</dt><dd>{money(currentQuote.grossAmountCents)}</dd></div>
           <div style={styles.note}>Geen btw: {EXEMPTION_NOTE.toLowerCase()}.</div>
-          {currentQuote.vatNumberValid && <div style={styles.validation}>Btw-nummer gevalideerd via VIES</div>}
         </dl>
       )}
 

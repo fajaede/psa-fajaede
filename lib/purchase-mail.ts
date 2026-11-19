@@ -78,7 +78,7 @@ export async function notifyPeppolInvoice(invoice: Invoice): Promise<void> {
       + `Referentie:   ${invoice.number} (geen factuurnummer; gebruik het nummer uit je boekhoudprogramma)\n`
       + `Klant:        ${invoice.customerName ?? ""}\n`
       + `Adres:        ${invoice.customerAddress ?? ""}\n`
-      + `Btw-nummer:   ${invoice.customerVat ?? ""} (gecontroleerd via VIES)\n`
+      + `Btw-nummer:   ${invoice.customerVat ?? ""}\n`
       + `E-mail:       ${invoice.customerEmail ?? ""}\n\n`
       + `Product:      ${invoice.description}\n`
       + (isExemptInvoice(invoice)

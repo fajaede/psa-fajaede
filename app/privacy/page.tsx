@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacybeleid voor psa.fajaede.nl" updated="16 november 2026">
+    <LegalPage title="Privacybeleid voor psa.fajaede.nl" updated="19 november 2026">
       <Section title="1. Wie zijn wij?">
         <p style={s.p}>
           psa.fajaede.nl (&quot;PSA&quot;, &quot;wij&quot;) is een dienst van {COMPANY.name}. PSA scant websites op privacy,
@@ -39,13 +39,10 @@ export default function PrivacyPage() {
           <li>
             <strong>Aankopen.</strong> Bij een PSA-licentie of een SEO/GEO re-scan verwerken wij uw e-mailadres, het
             bedrag, uw land en klanttype (particulier of bedrijf), en bij een bedrijf de bedrijfsnaam, het factuuradres en
-            het btw-nummer. Wij leggen ook vast dat en wanneer u akkoord ging met de voorwaarden en de directe levering.
-            Wij ontvangen en bewaren geen kaart- of bankrekeningnummers; de betaling verloopt via Mollie (zie punt 4).
-            Grondslag: uitvoering van de overeenkomst en wettelijke verplichtingen (boekhouding en btw).
-          </li>
-          <li>
-            <strong>Btw-controle.</strong> Een opgegeven btw-nummer controleren wij via VIES, de dienst van de Europese
-            Commissie. Grondslag: wettelijke verplichting.
+            het btw-nummer, zodat de factuur op de juiste naam staat. Wij leggen ook vast dat en wanneer u akkoord ging
+            met de voorwaarden en de directe levering. Wij ontvangen en bewaren geen kaart- of bankrekeningnummers; de
+            betaling verloopt via Mollie (zie punt 4). Grondslag: uitvoering van de overeenkomst en wettelijke
+            verplichtingen (boekhouding).
           </li>
           <li>
             <strong>Beveiliging en misbruikpreventie.</strong> Om te voorkomen dat de scanner, het inloggen of het
@@ -77,7 +74,7 @@ export default function PrivacyPage() {
             verwijderen, dan verwijderen wij uw e-mailadres, sessies en gevolgde websites.
           </li>
           <li>
-            Gegevens van aankopen en facturen: zolang de Belgische boekhoud- en btw-wetgeving dat vereist (in de regel
+            Gegevens van aankopen en facturen: zolang de Belgische boekhoudwetgeving dat vereist (in de regel
             10 jaar).
           </li>
           <li>Serverlogs: volgens de bewaartermijnen van onze hostingpartij, in de regel enkele dagen.</li>
@@ -116,10 +113,9 @@ export default function PrivacyPage() {
             <strong>Google Web Risk</strong>. De URL van een gescande website sturen wij naar Google om te controleren of
             die op een phishing- of malwarelijst staat. Er worden geen gegevens over u meegestuurd.
           </li>
-          <li><strong>Europese Commissie (VIES)</strong> voor de controle van btw-nummers.</li>
           <li>
-            <strong>Onze boekhouder</strong>, die wekelijks een overzicht van de verkopen ontvangt (bedragen, btw, land,
-            e-mailadres of bedrijfsgegevens), voor onze boekhouding en btw-aangifte.
+            <strong>Onze boekhouder</strong>, die wekelijks een overzicht van de verkopen ontvangt (bedragen, land,
+            e-mailadres of bedrijfsgegevens), voor onze boekhouding en belastingaangifte.
           </li>
           <li>
             <strong>Mijndomein</strong> (ons e-mailpakket), voor de mailbox {COMPANY.email} waar uw antwoorden en vragen

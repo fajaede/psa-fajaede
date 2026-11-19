@@ -70,8 +70,9 @@ export default function TermsPage() {
           <li>
             fajaede valt onder de bijzondere vrijstellingsregeling van belastingplichtige kleine ondernemingen en rekent
             geen btw aan, aan particulieren noch aan bedrijven, in België en daarbuiten. Er is dus ook geen btw die u
-            kunt aftrekken. Btw-nummers van bedrijven controleren wij via VIES, zodat de factuur op de juiste naam
-            staat. U bent verantwoordelijk voor de juistheid van de opgegeven gegevens.
+            kunt aftrekken. Bedrijven vermelden hun bedrijfsnaam, adres en (voor Belgische bedrijven verplicht)
+            btw-nummer, zodat de factuur op de juiste naam staat. U bent verantwoordelijk voor de juistheid van de
+            opgegeven gegevens.
           </li>
           <li>
             Betalingen verlopen via onze betaaldienstverlener Mollie. Wij ontvangen geen kaart- of bankgegevens. Koopt u
