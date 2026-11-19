@@ -7,25 +7,25 @@ import { VatCheckout } from "@/components/VatCheckout";
 
 const tiers = [
   {
-    name: "Free scan",
+    name: "Gratis scan",
     price: 0,
     description: "Instap – korte controle van de belangrijkste SEO‑punten.",
     tierKey: "FREE",
-    button: "Start free scan",
+    button: "Gratis scan starten",
   },
   {
     name: "Re‑scan",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN) || 149,
-    description: "Site‑audit van maximaal 50 pagina's: foutpagina's en gebroken links, titels en omschrijvingen, dubbele of dunne inhoud, indexatie, sitemap en laadtijd. Met rapport per pagina.",
+    description: "Site‑audit van maximaal 50 pagina's: foutpagina's en gebroken links, titels en omschrijvingen, dubbele of dunne inhoud, indexatie, sitemap en laadtijd. Met rapport per pagina en CSV-export, en 3 keer gratis opnieuw controleren binnen 30 dagen.",
     tierKey: "RE_SCAN",
-    button: "Upgrade – €149",
+    button: "Kies Re-scan – €149",
   },
   {
     name: "Re‑scan + adviezen",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN_ADV) || 249,
-    description: "Site‑audit van maximaal 100 pagina's met alle verbeterpunten per pagina, plus een advies‑call.",
+    description: "Site‑audit van maximaal 100 pagina's met alle verbeterpunten per pagina, 3 keer gratis opnieuw controleren binnen 30 dagen, plus een persoonlijke advies‑call over wat je eerst aanpakt.",
     tierKey: "RE_SCAN_ADV",
-    button: "Upgrade – €249",
+    button: "Kies Re-scan + adviezen – €249",
   },
 ];
 
