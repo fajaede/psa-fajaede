@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { MegaMenu } from "@/components/MegaMenu";
+import { SiteHeader } from "@/components/SiteHeader";
 import { useRouter } from "next/navigation";
 import { Turnstile, type TurnstileHandle } from "@/components/Turnstile";
 import { rankingText } from "@/lib/ranking-text";
@@ -171,6 +171,15 @@ export default function Home() {
     document.querySelector<HTMLInputElement>(".searchForm input[type=url]")?.focus({ preventScroll: true });
   };
 
+  // Links like /?scan=seo (mega menu on other pages) open the homepage with that scan selected.
+  useEffect(() => {
+    const mode = new URLSearchParams(window.location.search).get("scan");
+    if (mode === "psa" || mode === "seo" || mode === "geo") {
+      setScanMode(mode);
+      document.getElementById("scan")?.scrollIntoView({ block: "center" });
+    }
+  }, []);
+
   return (
     <main
       style={{
@@ -200,33 +209,7 @@ export default function Home() {
       {scanMode === "geo" && <div style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 800, height: 600, background: "radial-gradient(circle at top center, rgba(0,170,255,0.15) 0%, rgba(5,5,5,0) 70%)", pointerEvents: "none", zIndex: 0 }} />}
 
       {/* Global Navigation Bar */}
-      <header style={{
-        position: "relative",
-        zIndex: 100,
-        width: "100%", 
-        maxWidth: 1200, 
-        display: "flex", 
-        flexWrap: "wrap",
-        gap: "16px",
-        justifyContent: "space-between", 
-        alignItems: "center", 
-        padding: "24px 0 64px 0" 
-      }}>
-        <div style={{ fontWeight: 900, fontSize: 24, color: "#fff", letterSpacing: -1, cursor: "pointer" }}>
-          <span style={{ color: "#fff" }}>FajaedeAI</span><span style={{ color: "#ffdd00" }}> Core</span>
-        </div>
-        
-        <nav aria-label="Hoofdmenu" style={{ display: "flex", gap: 28, alignItems: "center", flexWrap: "wrap" }}>
-          <MegaMenu onScan={startScan} />
-          <a href="/price" className="topLink">Prijzen</a>
-          <a href="/app" className="topLink">Dashboard</a>
-          <a href="https://www.fajaede.nl/welkom-bij-fajaede-lab/" className="topLink" target="_blank" rel="noopener noreferrer">Community</a>
-        </nav>
-        
-        <div>
-          <a href="/app" style={{ display: "inline-block", background: "transparent", color: "#fff", border: "1px solid #555", padding: "10px 20px", borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: "none" }}>Login</a>
-        </div>
-      </header>
+      <SiteHeader onScan={startScan} />
 
       {/* Hero & PSA shield brand */}
       <section style={{ position: "relative", zIndex: 10, maxWidth: 800, textAlign: "center", marginBottom: 40, marginTop: 40 }}>
