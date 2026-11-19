@@ -66,6 +66,78 @@ export async function compareWithBenchmark(
   }
 }
 
+export type CompetitorEntry = {
+  domain: string;
+  overall: number | null;
+  scores: Partial<Record<BenchmarkMetric, number | null>>;
+  aheadOn: { metric: BenchmarkMetric; label: string; theirs: number; yours: number; difference: number }[];
+};
+
+export type Competitors = {
+  cohortLabel: string | null;
+  groupSize: number;
+  yourOverall: number | null;
+  ahead: CompetitorEntry[];
+  leader: CompetitorEntry | null;
+  behind: CompetitorEntry | null;
+  youLead: boolean;
+};
+
+function toEntry(raw: unknown): CompetitorEntry | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as { domain?: unknown; overall?: unknown; scores?: unknown; ahead_on?: unknown };
+  if (typeof r.domain !== "string") return null;
+  return {
+    domain: r.domain,
+    overall: typeof r.overall === "number" ? r.overall : null,
+    scores: (r.scores && typeof r.scores === "object" ? r.scores : {}) as CompetitorEntry["scores"],
+    aheadOn: Array.isArray(r.ahead_on) ? (r.ahead_on as CompetitorEntry["aheadOn"]) : [],
+  };
+}
+
+/** Sites in the same cohort just above you, the leader and where they are ahead; null without data. */
+export async function getCompetitors(
+  url: string,
+  scores: Partial<Record<BenchmarkMetric, number | null | undefined>>,
+): Promise<Competitors | null> {
+  const key = process.env.BENCHMARK_API_KEY?.trim();
+  if (!key) return null;
+  let domain: string;
+  try {
+    domain = new URL(url).hostname;
+  } catch {
+    return null;
+  }
+  const endpoint = new URL("/api/benchmark/competitors", process.env.BENCHMARK_API_URL?.trim() || DEFAULT_API);
+  endpoint.searchParams.set("domain", domain);
+  endpoint.searchParams.set("limit", "3");
+  for (const [metric, value] of Object.entries(scores)) {
+    if (typeof value === "number" && Number.isFinite(value)) endpoint.searchParams.set(metric, String(Math.round(value)));
+  }
+  try {
+    const response = await fetch(endpoint, {
+      headers: { "X-Benchmark-Key": key, Accept: "application/json" },
+      signal: AbortSignal.timeout(4_000),
+      next: { revalidate: 3600 },
+    });
+    if (!response.ok) throw new Error(`competitors API returned ${response.status}`);
+    const data = (await response.json()) as Record<string, unknown>;
+    if (!data.cohort) return null;
+    return {
+      cohortLabel: typeof data.cohort_label === "string" ? data.cohort_label : null,
+      groupSize: typeof data.group_size === "number" ? data.group_size : 0,
+      yourOverall: typeof data.your_overall === "number" ? data.your_overall : null,
+      ahead: (Array.isArray(data.ahead) ? data.ahead : []).map(toEntry).filter((e): e is CompetitorEntry => e !== null),
+      leader: toEntry(data.leader),
+      behind: toEntry(data.behind),
+      youLead: data.you_lead === true,
+    };
+  } catch (error) {
+    console.warn("Competitors unavailable:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
 /** Competitive score: the average percentile over the measured metrics (null without data). */
 export function competitiveScore(comparison: BenchmarkComparison | null): number | null {
   const values = Object.values(comparison?.metrics ?? {}).map((m) => m.percentile);
