@@ -71,12 +71,14 @@ export type CompetitorEntry = {
   overall: number | null;
   scores: Partial<Record<BenchmarkMetric, number | null>>;
   aheadOn: { metric: BenchmarkMetric; label: string; theirs: number; yours: number; difference: number }[];
+  authority: number | null;   // Common Crawl link authority 0-100 (null = unknown)
 };
 
 export type Competitors = {
   cohortLabel: string | null;
   groupSize: number;
   yourOverall: number | null;
+  yourAuthority: number | null;
   ahead: CompetitorEntry[];
   leader: CompetitorEntry | null;
   behind: CompetitorEntry | null;
@@ -86,13 +88,14 @@ export type Competitors = {
 
 function toEntry(raw: unknown): CompetitorEntry | null {
   if (!raw || typeof raw !== "object") return null;
-  const r = raw as { domain?: unknown; overall?: unknown; scores?: unknown; ahead_on?: unknown };
+  const r = raw as { domain?: unknown; overall?: unknown; scores?: unknown; ahead_on?: unknown; authority?: unknown };
   if (typeof r.domain !== "string") return null;
   return {
     domain: r.domain,
     overall: typeof r.overall === "number" ? r.overall : null,
     scores: (r.scores && typeof r.scores === "object" ? r.scores : {}) as CompetitorEntry["scores"],
     aheadOn: Array.isArray(r.ahead_on) ? (r.ahead_on as CompetitorEntry["aheadOn"]) : [],
+    authority: typeof r.authority === "number" ? r.authority : null,
   };
 }
 
@@ -138,6 +141,7 @@ export async function getCompetitors(
       cohortLabel: typeof data.cohort_label === "string" ? data.cohort_label : null,
       groupSize: typeof data.group_size === "number" ? data.group_size : 0,
       yourOverall: typeof data.your_overall === "number" ? data.your_overall : null,
+      yourAuthority: typeof data.your_authority === "number" ? data.your_authority : null,
       ahead: (Array.isArray(data.ahead) ? data.ahead : []).map(toEntry).filter((e): e is CompetitorEntry => e !== null),
       leader: toEntry(data.leader),
       behind: toEntry(data.behind),
