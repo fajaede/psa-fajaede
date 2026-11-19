@@ -6,10 +6,14 @@ import { TERMS_VERSION } from "@/lib/consent";
 import { euro, formatDate, invoiceFilename, renderInvoicePdf, SELLER } from "@/lib/invoice-pdf";
 import { isPeppolInvoice } from "@/lib/invoices";
 import { parseEmailList } from "@/lib/accounting-report";
+import { EXEMPTION_NOTE, isExemptInvoice } from "@/lib/vat-exemption";
 
 const FOOTER = `${SELLER.name} - ${SELLER.street}, 2600 Berchem, België - ${SELLER.vat}`;
 
 function amountLines(invoice: Invoice): string {
+  if (isExemptInvoice(invoice)) {
+    return `Bedrag: ${euro(invoice.grossCents)}\nGeen btw: ${EXEMPTION_NOTE.toLowerCase()}\n`;
+  }
   if (invoice.vatCents === 0) {
     return `Bedrag: ${euro(invoice.grossCents)}${invoice.reverseCharge ? " (btw verlegd, art. 196 Btw-richtlijn)" : " (0% btw)"}\n`;
   }
@@ -77,8 +81,9 @@ export async function notifyPeppolInvoice(invoice: Invoice): Promise<void> {
       + `Btw-nummer:   ${invoice.customerVat ?? ""} (gecontroleerd via VIES)\n`
       + `E-mail:       ${invoice.customerEmail ?? ""}\n\n`
       + `Product:      ${invoice.description}\n`
-      + `Excl. btw:    ${euro(invoice.netCents)}\n`
-      + `Btw:          ${euro(invoice.vatCents)}\n`
+      + (isExemptInvoice(invoice)
+        ? `Btw:          geen (${EXEMPTION_NOTE.toLowerCase()}; vermelden op de factuur)\n`
+        : `Excl. btw:    ${euro(invoice.netCents)}\n` + `Btw:          ${euro(invoice.vatCents)}\n`)
       + `Totaal:       ${euro(invoice.grossCents)} (al betaald)\n`
       + `Betaald op:   ${formatDate(invoice.createdAt)} via Mollie (${invoice.paymentId})\n`,
   });

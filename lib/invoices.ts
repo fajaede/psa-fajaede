@@ -38,12 +38,12 @@ export function isPeppolInvoice(invoice: Pick<Invoice, "number" | "customerType"
     || (invoice.customerType === "onderneming" && invoice.countryCode === "BE");
 }
 
-/** Invoice fields derived from the stored VAT quote (falls back to 21% Belgian VAT). */
+/** Invoice fields from the stored quote. Every invoice issued now falls under the small-enterprise VAT
+ * exemption (lib/vat-exemption.ts): no VAT, also for orders quoted with VAT before the exemption. */
 export function invoiceFields(input: IssueInvoiceInput) {
   const tax = asTax(input.taxDetails);
   const hasQuote = Boolean(tax && typeof tax.grossAmountCents === "number");
   const gross = hasQuote ? tax!.grossAmountCents! : input.paidAmountCents;
-  const vat = hasQuote ? tax!.vatAmountCents ?? 0 : gross - Math.round(gross / 1.21);
   const isBusiness = tax?.customerType === "business";
   const countryCode = tax?.countryCode ?? null;
   return {
@@ -55,11 +55,11 @@ export function invoiceFields(input: IssueInvoiceInput) {
     customerVat: isBusiness ? tax?.vatNumber ?? null : null,
     countryCode,
     grossCents: gross,
-    vatCents: vat,
-    netCents: hasQuote ? tax!.netAmountCents ?? gross - vat : gross - vat,
-    vatRateBasisPoints: hasQuote ? tax!.vatRateBasisPoints ?? 0 : 2100,
-    reverseCharge: tax?.treatment === "reverse-charge",
-    treatment: tax?.treatment ?? null,
+    vatCents: 0,
+    netCents: gross,
+    vatRateBasisPoints: 0,
+    reverseCharge: false,
+    treatment: "exempt",
   };
 }
 

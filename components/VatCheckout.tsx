@@ -4,6 +4,7 @@ import * as countries from "i18n-iso-countries";
 import nlLocale from "i18n-iso-countries/langs/nl.json";
 import { useState } from "react";
 import { EU_VAT_RATES_BPS, type CustomerType, type VatDetails } from "@/lib/vat-rates";
+import { EXEMPTION_NOTE } from "@/lib/vat-exemption";
 
 countries.registerLocale(nlLocale);
 
@@ -85,7 +86,6 @@ export function VatCheckout({
     style: "currency",
     currency: "EUR",
   }).format(cents / 100);
-  const vatRate = currentQuote ? currentQuote.vatRateBasisPoints / 100 : 0;
 
   return (
     <section style={styles.container}>
@@ -145,14 +145,9 @@ export function VatCheckout({
 
       {currentQuote && (
         <dl style={styles.breakdown} aria-live="polite">
-          <div style={styles.row}><dt>Prijs exclusief btw</dt><dd>{money(currentQuote.netAmountCents)}</dd></div>
-          <div style={styles.row}>
-            <dt>{currentQuote.treatment === "reverse-charge" ? "Btw verlegd" : `Btw (${vatRate.toLocaleString("nl-BE")}%)`}</dt>
-            <dd>{money(currentQuote.vatAmountCents)}</dd>
-          </div>
-          <div style={{ ...styles.row, ...styles.total }}><dt>Totaal inclusief btw</dt><dd>{money(currentQuote.grossAmountCents)}</dd></div>
+          <div style={{ ...styles.row, ...styles.total }}><dt>Totaal te betalen</dt><dd>{money(currentQuote.grossAmountCents)}</dd></div>
+          <div style={styles.note}>Geen btw: {EXEMPTION_NOTE.toLowerCase()}.</div>
           {currentQuote.vatNumberValid && <div style={styles.validation}>Btw-nummer gevalideerd via VIES</div>}
-          {currentQuote.treatment === "outside-eu" && <div style={styles.note}>Geen EU-btw toegepast</div>}
         </dl>
       )}
 

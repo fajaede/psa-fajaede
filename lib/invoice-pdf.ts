@@ -1,6 +1,7 @@
 // PDF invoice (Dutch, A4) with all mandatory Belgian invoice details.
 // Pure module: no database or Next.js imports, so it can be tested on its own.
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { EXEMPTION_NOTE, isExemptInvoice } from "@/lib/vat-exemption";
 
 export const SELLER = {
   name: "fajaede",
@@ -101,7 +102,8 @@ export async function renderInvoicePdf(invoice: InvoiceForPdf): Promise<Uint8Arr
   // Line table
   page.drawRectangle({ x: left, y: y - 6, width: right - left, height: 20, color: rgb(0.945, 0.96, 0.976) });
   text("Omschrijving", left + 6, 10, true);
-  textRight("Bedrag excl. btw", right - 6, 10, true);
+  const exempt = isExemptInvoice(invoice);
+  textRight(exempt ? "Bedrag" : "Bedrag excl. btw", right - 6, 10, true);
   y -= 22;
   const description = safe(invoice.description);
   const maxWidth = 360;
@@ -119,11 +121,14 @@ export async function renderInvoicePdf(invoice: InvoiceForPdf): Promise<Uint8Arr
     : invoice.vatRateBasisPoints === 0
       ? "Btw 0%"
       : `Btw ${(invoice.vatRateBasisPoints / 100).toLocaleString("nl-BE", { maximumFractionDigits: 2 })}%`;
-  for (const [label, cents, useBold] of [
-    ["Subtotaal excl. btw", invoice.netCents, false],
-    [rateLabel, invoice.vatCents, false],
-    [invoice.vatCents === 0 ? "Totaal te betalen" : "Totaal incl. btw", invoice.grossCents, true],
-  ] as const) {
+  const totals: (readonly [string, number, boolean])[] = exempt
+    ? [["Totaal te betalen", invoice.grossCents, true]]
+    : [
+      ["Subtotaal excl. btw", invoice.netCents, false],
+      [rateLabel, invoice.vatCents, false],
+      [invoice.vatCents === 0 ? "Totaal te betalen" : "Totaal incl. btw", invoice.grossCents, true],
+    ];
+  for (const [label, cents, useBold] of totals) {
     text(label, 330, 10, useBold);
     textRight(euro(cents), right - 6, 10, useBold);
     y -= 16;
@@ -131,7 +136,9 @@ export async function renderInvoicePdf(invoice: InvoiceForPdf): Promise<Uint8Arr
   y -= 14;
 
   const notes: string[] = [];
-  if (invoice.reverseCharge) {
+  if (exempt) {
+    notes.push(`${EXEMPTION_NOTE}.`);
+  } else if (invoice.reverseCharge) {
     notes.push("Btw verlegd naar de afnemer (art. 196 Richtlijn 2006/112/EG). De afnemer voldoet de btw.");
   } else if (invoice.treatment === "outside-eu") {
     notes.push("Dienst buiten de EU: geen Belgische btw verschuldigd.");

@@ -106,10 +106,6 @@ export async function calculateVatInclusiveQuote(input: {
     ? detectedIpCountry
     : null;
 
-  if (input.customerType === "consumer" && isEuCountry && ipCountryCode && ipCountryCode !== countryCode) {
-    throw new VatQuoteError("Je gekozen land wijkt af van je locatie. Controleer het factuurland en probeer opnieuw.", 422);
-  }
-
   let vatNumber: string | null = null;
   let vatNumberValid: boolean | null = null;
   let vatCheckedAt: string | null = null;
@@ -126,14 +122,10 @@ export async function calculateVatInclusiveQuote(input: {
     vatRequestId = validation.vatRequestId;
   }
 
-  const reverseCharge = input.customerType === "business"
-    && isEuCountry
-    && countryCode !== "BE"
-    && vatNumberValid === true;
-  const vatRateBasisPoints = reverseCharge ? 0 : EU_VAT_RATES_BPS[countryCode] ?? 0;
-  const vatAmountCents = vatRateBasisPoints === 0
-    ? 0
-    : grossAmountCents - Math.round(grossAmountCents * 10000 / (10000 + vatRateBasisPoints));
+  // Small-enterprise VAT exemption (lib/vat-exemption.ts): no VAT for anyone. The country, the business
+  // details and the VIES-checked VAT number are still collected for the invoice and the Peppol route.
+  const vatRateBasisPoints = 0;
+  const vatAmountCents = 0;
 
   return {
     countryCode,
@@ -148,12 +140,6 @@ export async function calculateVatInclusiveQuote(input: {
     netAmountCents: grossAmountCents - vatAmountCents,
     vatAmountCents,
     grossAmountCents,
-    treatment: reverseCharge
-      ? "reverse-charge"
-      : !isEuCountry
-        ? "outside-eu"
-        : countryCode === "BE"
-          ? "domestic-vat"
-          : "oss-b2c",
+    treatment: "exempt",
   };
 }
