@@ -1,4 +1,5 @@
 import type { CompetitorEntry, Competitors } from "@/lib/benchmark-api";
+import { cardStyles } from "./card-styles";
 
 const METRIC_SHORT: Record<string, string> = { psa: "PSA", seo: "SEO", geo: "GEO", ai: "AI" };
 const AUTHORITY_AHEAD = 10;   // same threshold as the other scores ("voor op" = at least 10 points)
@@ -19,7 +20,7 @@ export function CompetitorsCard({ competitors }: { competitors: Competitors | nu
       <h2 style={styles.h2}>Concurrenten</h2>
       <p style={styles.muted}>
         Vergeleken met {groupSize.toLocaleString("nl-NL")} {cohortLabel ?? "websites"} in de Fajaede-benchmark
-        {yourOverall !== null && <> · jouw score: <strong style={{ color: "#f0efec" }}>{yourOverall}</strong></>}.
+        {yourOverall !== null && <> · jouw Trust + Visibility-score: <strong style={{ color: "#f0efec" }}>{yourOverall}</strong></>}.
         Sites die net boven je staan zijn haalbare voorbeelden.
       </p>
       {yourAuthority !== null && (
@@ -45,7 +46,8 @@ export function CompetitorsCard({ competitors }: { competitors: Competitors | nu
         <p style={styles.muted}>Net onder je: {behind.domain} ({behind.overall ?? "–"}).</p>
       )}
       <p style={{ ...styles.muted, fontSize: 12 }}>
-        Scores van de homepage, gemeten door onze benchmark-crawler; &quot;voor op&quot; betekent minstens 10 punten hoger.
+        Scores van de homepage, gemeten door onze benchmark-crawler. Het groene getal is Trust + Visibility
+        (50% PSA, 50% SEO/GEO/AI), voor iedereen op dezelfde manier berekend; &quot;voor op&quot; betekent minstens 10 punten hoger.
         Autoriteit komt uit de openbare linkkaart van Common Crawl.
       </p>
     </section>
@@ -82,12 +84,7 @@ function Row({ entry, yourAuthority }: { entry: CompetitorEntry; yourAuthority: 
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: { display: "flex", flexDirection: "column", gap: 10, padding: 20, background: "#111", border: "1px solid #2a2a2a", borderRadius: 16, minWidth: 0 },
-  h2: { margin: 0, fontSize: 16 },
-  h3: { margin: "6px 0 0", fontSize: 14, color: "#f0efec" },
-  muted: { margin: 0, color: "#a8a7a0", fontSize: 14, lineHeight: 1.5 },
-  list: { margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 },
+  ...cardStyles,
   row: { display: "flex", flexDirection: "column", gap: 2, padding: "10px 12px", background: "#0b0b0b", border: "1px solid #222", borderRadius: 10 },
-  domain: { color: "#f0efec", fontWeight: 700, textDecoration: "none", overflowWrap: "anywhere" },
   score: { color: "#00ff99", fontWeight: 800 },
 };
