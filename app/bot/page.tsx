@@ -4,6 +4,7 @@ import { CRAWLER_NAME, CRAWLER_USER_AGENT, SCANNER_NAME, SCANNER_USER_AGENT } fr
 export const metadata = {
   title: "Onze bots: FajaedeScan en FajaedeBot | psa.fajaede.nl",
   description: "Wat FajaedeScan en FajaedeBot doen, hoe je ze herkent, en hoe je ze in Cloudflare toelaat of blokkeert.",
+  alternates: { canonical: "/bot" },
 };
 
 const code: React.CSSProperties = {

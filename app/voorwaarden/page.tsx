@@ -4,6 +4,7 @@ import { COMPANY, CompanyBlock, LegalPage, Section, legalStyles as s } from "@/c
 export const metadata = {
   title: "Algemene voorwaarden | psa.fajaede.nl",
   description: "Algemene voorwaarden en herroepingsbeleid voor psa.fajaede.nl: scans, PSA-licentie, re-scans en dashboard.",
+  alternates: { canonical: "/voorwaarden" },
 };
 
 export default function TermsPage() {
