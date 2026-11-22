@@ -4,6 +4,7 @@ import { COMPANY, CompanyBlock, LegalPage, Section, legalStyles as s } from "@/c
 export const metadata = {
   title: "Privacybeleid | psa.fajaede.nl",
   description: "Welke persoonsgegevens psa.fajaede.nl verwerkt, waarom, hoe lang, met wie, en welke rechten u heeft.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

@@ -1,0 +1,26 @@
+# FajaedeAI Core (psa.fajaede.nl)
+
+> Gratis scan van een website op privacy, beveiliging, leeftijdsrisico, technische SEO, GEO (lokale signalen) en AI-vindbaarheid, met een vergelijking met vergelijkbare .nl- en .be-websites. Gemaakt door fajaede, België.
+
+## Belangrijkste pagina's
+
+- [Gratis scan](https://psa.fajaede.nl/): vul een website in en krijg direct scores voor privacy, beveiliging en leeftijd (PSA), SEO en GEO, plus een phishing/malwarecheck en een vergelijking met de Fajaede-benchmark. Geen account nodig.
+- [Prijzen](https://psa.fajaede.nl/price): PSA-rapport met Trust Badge (€9 per jaar), Re-scan met site-audit van 50 pagina's (€149) en Re-scan + adviezen met 100 pagina's en een advies-call (€249). Eindprijzen, geen btw (vrijstellingsregeling kleine ondernemingen).
+- [Onze bots](https://psa.fajaede.nl/bot): FajaedeScan (scans op verzoek) en FajaedeBot (benchmark-crawler), hoe je ze herkent en toelaat.
+
+## Dashboard (gratis account)
+
+Websites volgen, scorehistorie, Trust & Growth met de belangrijkste acties, AI-zichtbaarheid, links naar je site (verwijzende domeinen), concurrenten in je sector en een "wat als"-simulatie van je positie.
+
+## Juridisch
+
+- [Privacybeleid](https://psa.fajaede.nl/privacy)
+- [Cookies](https://psa.fajaede.nl/cookies)
+- [Voorwaarden](https://psa.fajaede.nl/voorwaarden)
+
+## Andere producten van fajaede
+
+- [FajaedeSEO AI](https://www.fajaede.nl/): WordPress-plugin voor SEO en GEO, met Fajaede Cloud (autoriteit en backlinks).
+- [fajaede.eu](https://www.fajaede.eu/): Europese zoekmachine, websitebuilder met AI en Developer API.
+
+Contact: info@fajaede.nl

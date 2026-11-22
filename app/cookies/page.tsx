@@ -4,6 +4,7 @@ import { LegalPage, Section, legalStyles as s } from "@/components/LegalPage";
 export const metadata = {
   title: "Cookiebeleid | psa.fajaede.nl",
   description: "Welke cookies en opslag psa.fajaede.nl gebruikt: alleen strikt noodzakelijk, geen tracking.",
+  alternates: { canonical: "/cookies" },
 };
 
 export default function CookiesPage() {
