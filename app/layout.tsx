@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: "FajaedeAI Core | Privacy-, beveiligings- en SEO-scan voor je website",
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
+  verification: { google: "nbzTpmaNWJhPGZQscvLbSgM1BS5BVTnXctJz7ZV6HGA" },   // Google Search Console (URL-prefix property)
   openGraph: OG_BASE,
   twitter: { card: "summary_large_image" },
 };
