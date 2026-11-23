@@ -50,12 +50,12 @@ const FIXED: Record<string, [string, string]> = {
     "Geen gestructureerd werkgebied of regio gevonden.",
   ],
   business_identity: [
-    "Het lokale bedrijf heeft een naam en sameAs-links naar profielen.",
-    "Geen lokaal bedrijf met naam en sameAs-links naar profielen (bijv. Google, LinkedIn) gevonden.",
+    "Het bedrijf heeft een naam en sameAs-links naar profielen.",
+    "Geen bedrijf met naam en sameAs-links naar profielen (bijv. Google, LinkedIn) gevonden.",
   ],
   reviews: ["Gestructureerde reviews of beoordelingen gevonden.", "Geen gestructureerde reviews of beoordelingen gevonden."],
   nap_markup: [
-    "Naam, volledig adres en telefoon staan samen in de LocalBusiness-gegevens.",
+    "Naam, volledig adres en telefoon staan samen in de bedrijfsgegevens.",
     "Naam, volledig adres en telefoon staan niet samen in de gegevens van de pagina.",
   ],
 };
@@ -106,6 +106,9 @@ export function checkLabelNl(code: string, label: string): string {
 }
 
 export function checkDetailsNl(code: string, passed: boolean | null, details: string): string {
+  if (details.startsWith("Not applicable: the site declares an online business")) {
+    return "Niet van toepassing: de site geeft aan een online bedrijf te zijn (OnlineBusiness/OnlineStore).";
+  }
   const fixed = FIXED[code];
   if (fixed && passed !== null) return passed ? fixed[0] : fixed[1];
   return dynamicDetails(code, details) ?? details;
