@@ -155,7 +155,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           current={{ psa: measured.psa ?? null, seo: measured.seo ?? null, geo: measured.geo ?? null, ai: measured.ai ?? null }}
           named={[
             ...competitors.ahead.map((c) => ({ domain: c.domain, scores: c.scores, role: "net boven je" })),
-            ...(competitors.leader ? [{ domain: competitors.leader.domain, scores: competitors.leader.scores, role: "koploper" }] : []),
+            // When you lead, the "leader" is the strongest other site, which is also the one just below you: name it once.
+            ...(competitors.leader && !competitors.youLead ? [{ domain: competitors.leader.domain, scores: competitors.leader.scores, role: "koploper" }] : []),
             ...(competitors.behind ? [{ domain: competitors.behind.domain, scores: competitors.behind.scores, role: "net onder je" }] : []),
           ]}
         />
