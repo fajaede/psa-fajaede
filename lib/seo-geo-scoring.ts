@@ -14,6 +14,8 @@ export type SeoGeoScoringResult = {
     points: number | null;
     maxPoints: number;
     details: string;
+    /** The check does not apply to this site (e.g. a map for an online-only business); not part of the score. */
+    notApplicable: boolean;
   }>;
   issues: Array<{ label: string; details: string }>;
   coverage: number;
@@ -96,6 +98,7 @@ export async function getLiveSeoGeoScore(url: string, mode: "seo" | "geo"): Prom
         points: check.points,
         maxPoints: check.max_points,
         details: checkDetailsNl(check.code, check.passed, check.details),
+        notApplicable: check.not_applicable === true,
       };
     });
     const issues = modeIssues.map((entry) => {

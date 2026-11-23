@@ -52,6 +52,7 @@ type ScanResult = {
       points: number | null;
       maxPoints: number;
       details: string;
+      notApplicable?: boolean;
     }>;
     issues: Array<{ label: string; details: string }>;
     coverage: number;
@@ -486,7 +487,7 @@ export default function Home() {
                 {result.liveScoring.breakdown.map((check) => (
                   <div key={check.code} style={{ color: "#ccc", fontSize: 13, padding: 10, borderRadius: 8, background: check.passed === false ? "rgba(255,77,79,0.08)" : "rgba(0,255,153,0.05)" }}>
                     <strong style={{ color: "#fff" }}>{check.label}</strong>
-                    <div>{check.points === null ? "Niet gecontroleerd" : `${check.points}/${check.maxPoints} punten`}</div>
+                    <div>{check.notApplicable ? "Niet van toepassing" : check.points === null ? "Niet gecontroleerd" : `${check.points}/${check.maxPoints} punten`}</div>
                     <div style={{ color: "#999", marginTop: 4 }}>{check.details}</div>
                   </div>
                 ))}
