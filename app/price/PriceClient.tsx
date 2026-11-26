@@ -24,14 +24,14 @@ const tiers = [
   {
     name: "Re‑scan",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN) || 149,
-    description: "Site‑audit van maximaal 50 pagina's: foutpagina's en gebroken links, titels en omschrijvingen, dubbele of dunne inhoud, indexatie, sitemap en laadtijd. Met rapport per pagina en CSV-export, en 3 keer gratis opnieuw controleren binnen 30 dagen.",
+    description: "Voor grotere sites en wie blijft verbeteren: site‑audit van maximaal 250 pagina's (5× de Site‑audit), 3 keer gratis opnieuw controleren binnen 30 dagen om je voortgang te zien, en een nieuwe SEO/GEO‑scan van je score. Met rapport per pagina en CSV-export.",
     tierKey: "RE_SCAN",
     button: "Kies Re-scan – €149",
   },
   {
     name: "Re‑scan + adviezen",
     price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_RESCAN_ADV) || 249,
-    description: "Site‑audit van maximaal 100 pagina's met alle verbeterpunten per pagina, 3 keer gratis opnieuw controleren binnen 30 dagen, plus een persoonlijke advies‑call over wat je eerst aanpakt.",
+    description: "Voor webshops en grote sites: site‑audit van maximaal 500 pagina's met alle verbeterpunten per pagina, 3 keer gratis opnieuw controleren binnen 30 dagen, een nieuwe SEO/GEO‑scan, plus een persoonlijke advies‑call over wat je eerst aanpakt.",
     tierKey: "RE_SCAN_ADV",
     button: "Kies Re-scan + adviezen – €249",
   },

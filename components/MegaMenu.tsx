@@ -30,7 +30,7 @@ const COLUMNS: { title: string; items: Item[] }[] = [
       { icon: "⚔️", title: "Concurrenten", text: "Wie staat net boven je, en waarom", href: "/app" },
       { icon: "🎚️", title: "Positie en wat als", text: "Zie waar je komt met betere scores", href: "/app" },
       { icon: "🔗", title: "Links en autoriteit", text: "Wie naar je linkt, vergeleken met de rest", href: "/app" },
-      { icon: "🧭", title: "Site-audit", text: "Tot 100 pagina's, elke fout per URL", href: "/price" },
+      { icon: "🧭", title: "Site-audit", text: "Eerste 10 pagina's gratis, elke fout per URL", href: "/site-audit" },
     ],
   },
   {
