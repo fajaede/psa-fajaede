@@ -51,7 +51,7 @@ export type SiteAudit = {
   result: AuditResult | null;
 };
 
-export const AUDIT_PAGES: Record<string, number> = { RE_SCAN: 50, RE_SCAN_ADV: 100, SITE_AUDIT: 50 };
+export const AUDIT_PAGES: Record<string, number> = { RE_SCAN: 250, RE_SCAN_ADV: 500, SITE_AUDIT: 50 };
 export {
   FREE_VISIBLE_PAGES, isFreeAudit, lockAuditResult, maxReruns, orderPaymentUpdate, RERUN_DAYS, rerunsLeft,
   type LockedAuditIssue, type LockedAuditResult,

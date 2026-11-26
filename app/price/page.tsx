@@ -4,7 +4,7 @@ import { OG_BASE } from "@/lib/seo";
 
 const title = "Prijzen: PSA-rapport, Re-scan en site-audit | psa.fajaede.nl";
 const description =
-  "PSA-rapport met Trust Badge voor €9 per jaar, Re-scan met site-audit van 50 pagina's voor €149, of 100 pagina's met advies-call voor €249. Eindprijzen, geen btw.";
+  "PSA-rapport met Trust Badge voor €9 per jaar, Site-audit van 50 pagina's voor €49 (eerste 10 gratis), Re-scan met 250 pagina's voor €149, of 500 pagina's met advies-call voor €249. Eindprijzen, geen btw.";
 
 export const metadata: Metadata = {
   title,

@@ -19,8 +19,9 @@ const app = {
   offers: [
     { "@type": "Offer", name: "Gratis scan", price: "0", priceCurrency: "EUR" },
     { "@type": "Offer", name: "PSA-rapport en Trust Badge (per jaar)", price: "9", priceCurrency: "EUR", url: `${SITE_URL}/price` },
-    { "@type": "Offer", name: "Re-scan (site-audit 50 pagina's)", price: "149", priceCurrency: "EUR", url: `${SITE_URL}/price` },
-    { "@type": "Offer", name: "Re-scan + adviezen (100 pagina's en advies-call)", price: "249", priceCurrency: "EUR", url: `${SITE_URL}/price` },
+    { "@type": "Offer", name: "Site-audit (50 pagina's)", price: "49", priceCurrency: "EUR", url: `${SITE_URL}/price` },
+    { "@type": "Offer", name: "Re-scan (site-audit 250 pagina's)", price: "149", priceCurrency: "EUR", url: `${SITE_URL}/price` },
+    { "@type": "Offer", name: "Re-scan + adviezen (500 pagina's en advies-call)", price: "249", priceCurrency: "EUR", url: `${SITE_URL}/price` },
   ],
 };
 
