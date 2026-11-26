@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { AUDIT_PAGES, ensureOrderAudit, getSiteAudit, rerunsLeft, type AuditIssue } from "@/lib/site-audit-api";
+import {
+  AUDIT_PAGES, ensureOrderAudit, FREE_VISIBLE_PAGES, getSiteAudit, isFreeAudit, lockAuditResult, rerunsLeft, type AuditIssue,
+} from "@/lib/site-audit-api";
+import { getGrossPriceCents } from "@/lib/vat";
 import { RerunButton } from "./RerunButton";
 import { COMPANY } from "@/components/LegalPage";
 import { AutoRefresh } from "./AutoRefresh";
@@ -22,7 +25,7 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
   const { token } = await params;
   if (!/^[a-f0-9]{32}$/.test(token)) notFound();
   let order = await prisma.premiumOrder.findUnique({ where: { auditToken: token } });
-  if (!order || order.status !== "paid") notFound();
+  if (!order || !(order.status === "paid" || isFreeAudit(order))) notFound();
   if (!order.siteAuditId) {
     await ensureOrderAudit(order.id);                       // retry a start that failed at payment time
     order = await prisma.premiumOrder.findUnique({ where: { id: order.id } });
@@ -31,12 +34,34 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
   const audit = order.siteAuditId ? await getSiteAudit(order.siteAuditId) : null;
   const pages = AUDIT_PAGES[order.tier] ?? 50;
   const running = !audit || audit.status === "queued" || audit.status === "running";
-  const result = audit?.status === "done" ? audit.result : null;
+  const fullResult = audit?.status === "done" ? audit.result : null;
+  // Free Site-audit: real totals, details of the first pages only; hidden URLs never leave the server.
+  const locked = isFreeAudit(order);
+  const lockedResult = locked && fullResult ? lockAuditResult(fullResult) : null;
+  const result = lockedResult ?? fullResult;
+  const unlockUrl = `/price?tier=SITE_AUDIT&audit=${token}&url=${encodeURIComponent(order.scanUrl ?? "")}`;
+  const unlockPrice = locked ? Math.round(getGrossPriceCents("SITE_AUDIT") / 100) : 0;
+  const unlockCard = lockedResult && (lockedResult.hiddenPages > 0 || lockedResult.hiddenFindings > 0) ? (
+    <section style={styles.unlock}>
+      <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <h2 style={{ ...styles.h2, margin: 0 }}>
+          🔒 Nog {lockedResult.hiddenFindings} {lockedResult.hiddenFindings === 1 ? "probleem" : "problemen"} op {lockedResult.hiddenPages} andere pagina&apos;s
+        </h2>
+        <p style={styles.muted}>
+          Gratis zie je alle soorten problemen en de details van de eerste {FREE_VISIBLE_PAGES} pagina&apos;s. Ontgrendel de
+          volledige audit: per pagina wat er mis is, CSV-export om af te vinken en 1 keer gratis opnieuw controleren binnen 30 dagen.
+        </p>
+      </div>
+      <a href={unlockUrl} style={styles.unlockButton}>Ontgrendel alle {pages} pagina&apos;s – €{unlockPrice}</a>
+    </section>
+  ) : null;
 
   return (
     <main style={styles.page}>
       <article style={styles.article}>
-        <p style={styles.muted}>Site-audit · tot {pages} pagina&apos;s</p>
+        <p style={styles.muted}>
+          Site-audit · tot {pages} pagina&apos;s{locked ? ` · gratis versie: details van ${FREE_VISIBLE_PAGES} pagina's` : ""}
+        </p>
         <h1 style={styles.h1}>{(order.scanUrl ?? "").replace(/^https?:\/\//, "")}</h1>
 
         {running && (
@@ -58,9 +83,11 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
               Blokkeert je website bots (bijvoorbeeld met Cloudflare)? Zie <a href="/bot" style={styles.link}>psa.fajaede.nl/bot</a>,
               pas dat aan en controleer opnieuw. Lukt het niet, mail dan {COMPANY.email}.
             </p>
-            <div style={{ marginTop: 12 }}>
-              <RerunButton token={token} left={rerunsLeft(order)} />
-            </div>
+            {!locked && (
+              <div style={{ marginTop: 12 }}>
+                <RerunButton token={token} left={rerunsLeft(order)} />
+              </div>
+            )}
           </section>
         )}
 
@@ -77,6 +104,8 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
               <p style={styles.muted}>Gemiddelde laadtijd van de HTML: {(result.summary.average_response_ms / 1000).toFixed(1)} s.</p>
             )}
 
+            {unlockCard}
+
             <section style={{ ...styles.card, display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between", alignItems: "flex-start" }}>
               <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <h2 style={{ ...styles.h2, margin: 0 }}>Zo werk je de punten af</h2>
@@ -85,9 +114,11 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
                   pagina&apos;s. Download de lijst als CSV om af te vinken wat je hebt opgelost. Gebroken links in je
                   menu of footer pas je in WordPress aan onder <em>Weergave → Menu&apos;s</em> (of Widgets).
                 </p>
-                <a href={`/audit/${token}/csv`} style={styles.link}>Download alle punten als CSV</a>
+                {locked
+                  ? <a href={unlockUrl} style={styles.link}>CSV-export en opnieuw controleren: ontgrendel de volledige audit</a>
+                  : <a href={`/audit/${token}/csv`} style={styles.link}>Download alle punten als CSV</a>}
               </div>
-              <RerunButton token={token} left={rerunsLeft(order)} />
+              {!locked && <RerunButton token={token} left={rerunsLeft(order)} />}
             </section>
 
             <section style={styles.card}>
@@ -113,9 +144,13 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
                         </ul>
                       </details>
                     )}
-                    {issue.count > issue.urls.length && (
+                    {issue.count > issue.urls.length && (locked ? (
+                      <p style={styles.muted}>
+                        🔒 …en nog {issue.count - issue.urls.length} andere. <a href={unlockUrl} style={styles.link}>Ontgrendel om te zien welke</a>
+                      </p>
+                    ) : (
                       <p style={styles.muted}>…en nog {issue.count - issue.urls.length} andere (zie de CSV).</p>
-                    )}
+                    ))}
                   </details>
                 ))
               )}
@@ -141,6 +176,13 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
                         <td style={styles.td}>{p.issues.length}</td>
                       </tr>
                     ))}
+                    {lockedResult && lockedResult.hiddenPages > 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ ...styles.td, color: "#a8a7a0" }}>
+                          🔒 Nog {lockedResult.hiddenPages} pagina&apos;s. <a href={unlockUrl} style={styles.link}>Ontgrendel de volledige audit</a>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -150,6 +192,7 @@ export default async function AuditPage({ params }: { params: Promise<{ token: s
               onze scanner FajaedeScan, die robots.txt volgt. Dit is een technische controle van de HTML; echte laadsnelheid
               (Core Web Vitals) en backlinks worden niet gemeten.
             </p>
+            {unlockCard}
           </>
         )}
       </article>
@@ -184,4 +227,8 @@ const styles: Record<string, React.CSSProperties> = {
   table: { width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 14 },
   th: { textAlign: "left", padding: "8px 10px", borderBottom: "1px solid #333", color: "#f0efec" },
   td: { padding: "8px 10px", borderBottom: "1px solid #222", verticalAlign: "top" },
+  unlock: { padding: 20, background: "linear-gradient(135deg, rgba(0,255,153,0.10), rgba(0,170,255,0.08))", border: "1px solid rgba(0,255,153,0.45)",
+    borderRadius: 16, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" },
+  unlockButton: { background: "#00ff99", color: "#050505", fontWeight: 800, padding: "12px 20px", borderRadius: 10, textDecoration: "none",
+    whiteSpace: "nowrap" },
 };

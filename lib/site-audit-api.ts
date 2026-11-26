@@ -1,8 +1,12 @@
 // Site audit at api.fajaede.eu (/api/site-audit, same key as the benchmark).
 // Paid re-scans get a crawl of up to 50 (Re-scan) or 100 (Re-scan + adviezen) pages.
+// The Site-audit on its own crawls 50 pages for free and shows the first 10 until it is paid.
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/login-mail";
+import { sendMail } from "@/lib/mailer";
+import { checkRateLimit, validatePublicScanUrl } from "@/lib/scan-guard";
+import { FREE_VISIBLE_PAGES, isFreeAudit, maxReruns, RERUN_DAYS, rerunsLeft } from "./site-audit-rules";
 
 export type AuditIssue = {
   code: string;
@@ -47,7 +51,11 @@ export type SiteAudit = {
   result: AuditResult | null;
 };
 
-export const AUDIT_PAGES: Record<string, number> = { RE_SCAN: 50, RE_SCAN_ADV: 100 };
+export const AUDIT_PAGES: Record<string, number> = { RE_SCAN: 50, RE_SCAN_ADV: 100, SITE_AUDIT: 50 };
+export {
+  FREE_VISIBLE_PAGES, isFreeAudit, lockAuditResult, maxReruns, orderPaymentUpdate, RERUN_DAYS, rerunsLeft,
+  type LockedAuditIssue, type LockedAuditResult,
+} from "./site-audit-rules";
 
 function endpoint(path: string): URL {
   return new URL(path, process.env.BENCHMARK_API_URL?.trim() || "https://api.fajaede.eu");
@@ -102,7 +110,7 @@ export async function getSiteAudit(id: string): Promise<SiteAudit | null> {
  */
 export async function ensureOrderAudit(orderId: string): Promise<string | null> {
   const order = await prisma.premiumOrder.findUnique({ where: { id: orderId } });
-  if (!order || order.status !== "paid" || !order.scanUrl) return null;
+  if (!order || !order.scanUrl || !(order.status === "paid" || isFreeAudit(order))) return null;
   let token = order.auditToken;
   if (!token) {
     token = randomBytes(16).toString("hex");
@@ -120,15 +128,6 @@ export function auditPageUrl(token: string): string {
   return `${appBaseUrl()}/audit/${token}`;
 }
 
-// After fixing issues the customer may check again: a few re-runs within a month of the purchase,
-// so a one-off audit does not turn into free ongoing monitoring.
-export const MAX_RERUNS = 3;
-export const RERUN_DAYS = 30;
-
-export function rerunsLeft(order: { auditReruns: number; createdAt: Date }, now = new Date()): number {
-  const expired = now.getTime() - order.createdAt.getTime() > RERUN_DAYS * 86_400_000;
-  return expired ? 0 : Math.max(0, MAX_RERUNS - order.auditReruns);
-}
 
 export type RerunResult = { ok: true } | { ok: false; reason: string };
 
@@ -137,7 +136,8 @@ export async function rerunOrderAudit(token: string): Promise<RerunResult> {
   const order = await prisma.premiumOrder.findUnique({ where: { auditToken: token } });
   if (!order || order.status !== "paid" || !order.scanUrl) return { ok: false, reason: "Audit niet gevonden." };
   if (rerunsLeft(order) === 0) {
-    return { ok: false, reason: `Opnieuw controleren kan ${MAX_RERUNS} keer binnen ${RERUN_DAYS} dagen na aankoop; dat is op.` };
+    const max = maxReruns(order.tier);
+    return { ok: false, reason: `Opnieuw controleren kan ${max} keer binnen ${RERUN_DAYS} dagen na aankoop; dat is op.` };
   }
   if (order.siteAuditId) {
     const current = await getSiteAudit(order.siteAuditId);
@@ -158,4 +158,99 @@ export async function rerunOrderAudit(token: string): Promise<RerunResult> {
   }
   await prisma.premiumOrder.update({ where: { id: order.id }, data: { siteAuditId: auditId } });
   return { ok: true };
+}
+
+// ---------------------------------------------------------------- free Site-audit
+
+
+
+/** Same form as a paid order's scanUrl (lower case, no trailing slash). */
+export function auditSiteUrl(input: string): string {
+  const raw = input.trim();
+  const withScheme = raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw;
+  return withScheme.toLowerCase().replace(/\/$/, "");
+}
+
+const FREE_REUSE_DAYS = 7;          // same site within a week: the existing crawl is reused
+const FREE_PER_EMAIL_PER_DAY = 3;
+const FREE_PER_IP_PER_DAY = 10;
+
+export type FreeAuditResult = { ok: true; token: string } | { ok: false; status: number; error: string };
+
+/**
+ * Start (or reuse) a free Site-audit for `url`, mail the private link to `email`.
+ * The same e-mail address asking for the same site within a week gets its existing report back;
+ * someone else gets their own report on the same crawl, so the site is not crawled twice.
+ */
+export async function startFreeAudit(url: string, email: string, ip: string, consent: object): Promise<FreeAuditResult> {
+  const siteUrl = auditSiteUrl(url);
+  const mail = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return { ok: false, status: 400, error: "Vul een geldig e-mailadres in." };
+  if (!siteUrl || await validatePublicScanUrl(siteUrl)) {
+    return { ok: false, status: 400, error: "Vul een geldige, openbare website in (bijvoorbeeld https://jouwsite.nl)." };
+  }
+
+  const since = new Date(Date.now() - FREE_REUSE_DAYS * 86_400_000);
+  const recent = await prisma.premiumOrder.findMany({
+    where: { tier: "SITE_AUDIT", scanUrl: siteUrl, createdAt: { gte: since }, siteAuditId: { not: null } },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
+  const own = recent.find((order) => order.email.toLowerCase() === mail && order.auditToken);
+  if (own?.auditToken) return { ok: true, token: own.auditToken };
+
+  if (await checkRateLimit("free-audit-email", mail, FREE_PER_EMAIL_PER_DAY, 86_400)) {
+    return { ok: false, status: 429, error: `Je kunt ${FREE_PER_EMAIL_PER_DAY} gratis audits per dag aanvragen. Probeer het morgen opnieuw.` };
+  }
+  if (await checkRateLimit("free-audit-ip", ip, FREE_PER_IP_PER_DAY, 86_400)) {
+    return { ok: false, status: 429, error: "Te veel gratis audits vanaf dit netwerk vandaag. Probeer het morgen opnieuw." };
+  }
+
+  // Reuse a recent crawl of the same site when it did not fail.
+  let siteAuditId: string | null = null;
+  for (const order of recent) {
+    const audit = order.siteAuditId ? await getSiteAudit(order.siteAuditId) : null;
+    if (audit && audit.status !== "failed") {
+      siteAuditId = audit.id;
+      break;
+    }
+  }
+
+  const order = await prisma.premiumOrder.create({
+    data: {
+      email: mail,
+      tier: "SITE_AUDIT",
+      paymentId: "free",
+      priceCents: 0,
+      status: "free",
+      scanUrl: siteUrl,
+      scanMode: null,
+      siteAuditId,
+      taxDetails: consent as object,
+    },
+  });
+  const token = await ensureOrderAudit(order.id);
+  if (!token) return { ok: false, status: 503, error: "De audit kon nu niet worden gestart. Probeer het over een paar minuten opnieuw." };
+
+  try {
+    await sendMail({
+      to: mail,
+      subject: `Je gratis site-audit van ${siteUrl.replace(/^https?:\/\//, "")}`,
+      text: [
+        "Hallo,",
+        "",
+        `We controleren nu tot ${AUDIT_PAGES.SITE_AUDIT} pagina's van ${siteUrl}. Over een paar minuten staat je rapport klaar:`,
+        auditPageUrl(token),
+        "",
+        `Gratis zie je alle gevonden problemen en de details van de eerste ${FREE_VISIBLE_PAGES} pagina's.`,
+        "Met de volledige site-audit zie je per pagina wat er mis is, krijg je een CSV-export en kun je na het verbeteren 1 keer gratis opnieuw laten controleren.",
+        "",
+        "Groet,",
+        "fajaede",
+      ].join("\n"),
+    });
+  } catch (error) {
+    console.warn("Free audit mail could not be sent:", error instanceof Error ? error.message : error);
+  }
+  return { ok: true, token };
 }

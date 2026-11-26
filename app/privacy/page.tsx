@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacybeleid voor psa.fajaede.nl" updated="19 november 2026">
+    <LegalPage title="Privacybeleid voor psa.fajaede.nl" updated="26 november 2026">
       <Section title="1. Wie zijn wij?">
         <p style={s.p}>
           psa.fajaede.nl (&quot;PSA&quot;, &quot;wij&quot;) is een dienst van {COMPANY.name}. PSA scant websites op privacy,
@@ -38,7 +38,12 @@ export default function PrivacyPage() {
             <Link href="/cookies" style={s.link}>cookiebeleid</Link>). Grondslag: uitvoering van de overeenkomst.
           </li>
           <li>
-            <strong>Aankopen.</strong> Bij een PSA-licentie of een SEO/GEO re-scan verwerken wij uw e-mailadres, het
+            <strong>Gratis site-audit.</strong> Uw e-mailadres en de website die u laat controleren, zodat wij u de
+            link naar het rapport kunnen mailen en u het rapport later kunt ontgrendelen. Wij leggen ook vast dat en
+            wanneer u akkoord ging met de voorwaarden. Grondslag: uitvoering van de overeenkomst.
+          </li>
+          <li>
+            <strong>Aankopen.</strong> Bij een PSA-licentie, site-audit of SEO/GEO re-scan verwerken wij uw e-mailadres, het
             bedrag, uw land en klanttype (particulier of bedrijf), en bij een bedrijf de bedrijfsnaam, het factuuradres en
             het btw-nummer, zodat de factuur op de juiste naam staat. Wij leggen ook vast dat en wanneer u akkoord ging
             met de voorwaarden en de directe levering. Wij ontvangen en bewaren geen kaart- of bankrekeningnummers; de
@@ -73,6 +78,10 @@ export default function PrivacyPage() {
           <li>
             Account, gevolgde websites en scoregeschiedenis: zolang uw account bestaat. Vraagt u ons uw account te
             verwijderen, dan verwijderen wij uw e-mailadres, sessies en gevolgde websites.
+          </li>
+          <li>
+            Gratis site-audits (e-mailadres, website en link naar het rapport): zolang u het rapport wilt kunnen
+            bekijken of ontgrendelen. Vraagt u ons de audit te verwijderen, dan verwijderen wij deze gegevens.
           </li>
           <li>
             Gegevens van aankopen en facturen: zolang de Belgische boekhoudwetgeving dat vereist (in de regel

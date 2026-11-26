@@ -11,8 +11,8 @@ import { getMollieWebhookUrl, getPsaAppUrl } from "@/lib/psa-urls";
 
 export async function POST(request: Request) {
   try {
-    const { tier, email, scanMode, scanUrl, countryCode, customerType, vatNumber, companyName, companyAddress, acceptTerms } = await request.json();
-    if ((tier !== "RE_SCAN" && tier !== "RE_SCAN_ADV") || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    const { tier, email, scanMode, scanUrl, auditToken, countryCode, customerType, vatNumber, companyName, companyAddress, acceptTerms } = await request.json();
+    if ((tier !== "RE_SCAN" && tier !== "RE_SCAN_ADV" && tier !== "SITE_AUDIT") || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "A valid premium tier and email address are required" }, { status: 400 });
     }
 
@@ -25,29 +25,44 @@ export async function POST(request: Request) {
     const invoiceDetails = parseBusinessInvoiceDetails(customerType, companyName, companyAddress);
     const consentDetails = requireCheckoutConsent(acceptTerms);
 
+    // Unlocking a free Site-audit: the payment goes on that order, so paying opens the same report at once.
+    const freeOrder = tier === "SITE_AUDIT" && typeof auditToken === "string" && /^[a-f0-9]{32}$/.test(auditToken)
+      ? await prisma.premiumOrder.findUnique({ where: { auditToken } })
+      : null;
+    if (freeOrder && (freeOrder.tier !== "SITE_AUDIT" || freeOrder.status === "paid")) {
+      return NextResponse.json({ error: "Deze site-audit is al volledig ontgrendeld." }, { status: 409 });
+    }
+
     // A re-scan is always for one website: it includes the site audit, so the URL is required.
-    const mode = scanMode === undefined || scanMode === null || scanMode === "" ? "seo" : scanMode;
-    if (mode !== "seo" && mode !== "geo") {
+    // A Site-audit has no SEO/GEO re-scan, so no scan mode (no scan gets marked as paid).
+    const mode = tier === "SITE_AUDIT" ? null : scanMode === undefined || scanMode === null || scanMode === "" ? "seo" : scanMode;
+    if (mode !== null && mode !== "seo" && mode !== "geo") {
       return NextResponse.json({ error: "Invalid scan mode" }, { status: 400 });
     }
-    const rawUrl = typeof scanUrl === "string" ? scanUrl.trim() : "";
+    const rawUrl = freeOrder?.scanUrl ?? (typeof scanUrl === "string" ? scanUrl.trim() : "");
     const siteUrl = rawUrl && !/^https?:\/\//i.test(rawUrl) ? `https://${rawUrl}` : rawUrl;
     if (!siteUrl || await validatePublicScanUrl(siteUrl)) {
       return NextResponse.json({ error: "Vul een geldige, openbare website in (bijvoorbeeld https://jouwsite.nl)." }, { status: 400 });
     }
 
-    // Create a pending order in the DB (price in cents)
-    const order = await prisma.premiumOrder.create({
-      data: {
-        email: email.trim(),
-        tier,
-        paymentId: "pending",
-        priceCents: taxDetails.grossAmountCents,
-        taxDetails: { ...taxDetails, ...invoiceDetails, ...consentDetails },
-        scanUrl: siteUrl.toLowerCase().replace(/\/$/, ""),
-        scanMode: mode,
-      },
-    });
+    // Create a pending order in the DB (price in cents); a free Site-audit keeps its order and stays
+    // "free" until Mollie reports the payment as paid.
+    const orderData = {
+      email: email.trim(),
+      priceCents: taxDetails.grossAmountCents,
+      taxDetails: { ...taxDetails, ...invoiceDetails, ...consentDetails },
+    };
+    const order = freeOrder
+      ? await prisma.premiumOrder.update({ where: { id: freeOrder.id }, data: orderData })
+      : await prisma.premiumOrder.create({
+        data: {
+          ...orderData,
+          tier,
+          paymentId: "pending",
+          scanUrl: siteUrl.toLowerCase().replace(/\/$/, ""),
+          scanMode: mode,
+        },
+      });
 
     const mollieKey = getMollieApiKey();
     if (!mollieKey) {
@@ -57,7 +72,7 @@ export async function POST(request: Request) {
     const baseUrl = getPsaAppUrl(request.url);
     const metadata: Record<string, string> = {
       orderId: order.id,
-      scanMode: mode,
+      scanMode: mode ?? "",
       scanUrl: order.scanUrl ?? "",
     };
 
@@ -67,7 +82,7 @@ export async function POST(request: Request) {
         currency: "EUR",
         value: (taxDetails.grossAmountCents / 100).toFixed(2),
       },
-      description: `${tier} ${mode.toUpperCase()} re-scan for ${email.trim()}`,
+      description: tier === "SITE_AUDIT" ? `Site-audit for ${order.scanUrl ?? siteUrl}` : `${tier} ${(mode ?? "seo").toUpperCase()} re-scan for ${email.trim()}`,
       redirectUrl: `${baseUrl}/premium/success?orderId=${encodeURIComponent(order.id)}`,
       webhookUrl: getMollieWebhookUrl(baseUrl),
       metadata,

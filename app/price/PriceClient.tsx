@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { VatCheckout } from "@/components/VatCheckout";
+import { FreeAuditForm } from "@/components/FreeAuditForm";
 
 const tiers = [
   {
@@ -12,6 +13,13 @@ const tiers = [
     description: "Instap – korte controle van de belangrijkste SEO‑punten.",
     tierKey: "FREE",
     button: "Gratis scan starten",
+  },
+  {
+    name: "Site‑audit",
+    price: Number(process.env.NEXT_PUBLIC_PREMIUM_PRICE_SITE_AUDIT) || 49,
+    description: "Controle van maximaal 50 pagina's: foutpagina's en gebroken links, titels en omschrijvingen, dubbele of dunne inhoud, indexatie, sitemap en laadtijd. Rapport per pagina, CSV-export en 1 keer gratis opnieuw controleren binnen 30 dagen. Eerst gratis proberen kan: de eerste 10 pagina's zie je kosteloos.",
+    tierKey: "SITE_AUDIT",
+    button: "Kies Site-audit – €49",
   },
   {
     name: "Re‑scan",
@@ -35,17 +43,31 @@ export default function PricePage() {
   const [scanMode, setScanMode] = useState<"seo" | "geo" | null>(null);
   const [scanUrl, setScanUrl] = useState("");
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  // Unlocking a free Site-audit: the payment is added to that audit, so the same report opens at once.
+  const [auditToken, setAuditToken] = useState<string | null>(null);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     setScanMode(searchParams.get("mode") === "geo" ? "geo" : searchParams.get("mode") === "seo" ? "seo" : null);
     setScanUrl(searchParams.get("url") || "");
+    const tier = searchParams.get("tier");
+    if (tier && tiers.some((t) => t.tierKey === tier && t.tierKey !== "FREE")) setSelectedTier(tier);
+    const token = searchParams.get("audit");
+    if (token && /^[a-f0-9]{32}$/.test(token)) {
+      setAuditToken(token);
+      setSelectedTier("SITE_AUDIT");
+    }
   }, []);
 
   return (
     <main style={styles.container}>
       <div style={styles.checkoutBadge}>Fajaede Secure Checkout</div>
-      <h1 style={styles.title}>Kies jouw {scanMode === "geo" ? "GEO" : "SEO"}‑her‑scan</h1>
+      <h1 style={styles.title}>{auditToken ? "Ontgrendel je volledige site-audit" : "Kies je pakket"}</h1>
+      {auditToken && (
+        <p style={{ ...styles.desc, maxWidth: 640, textAlign: "center" }}>
+          Na betaling opent hetzelfde rapport meteen volledig: alle pagina&apos;s, CSV-export en 1 keer gratis opnieuw controleren.
+        </p>
+      )}
       {/* A re-scan includes a site audit of one website: always ask which one. */}
       <label style={styles.emailLabel}>
         Website die we onderzoeken
@@ -84,6 +106,11 @@ export default function PricePage() {
           </div>
         ))}
       </section>
+      {!auditToken && (
+        <section style={{ width: "100%", maxWidth: 640, marginTop: 24 }}>
+          <FreeAuditForm url={scanUrl.trim() || undefined} title="Eerst gratis proberen? Start een gratis site-audit" />
+        </section>
+      )}
       {selectedTier && (
         <section style={styles.checkout}>
           <h2 style={styles.cardTitle}>Factuurgegevens</h2>
@@ -96,6 +123,7 @@ export default function PricePage() {
               email: email.trim(),
               scanMode: scanMode ?? "seo",
               scanUrl: scanUrl.trim(),
+              ...(selectedTier === "SITE_AUDIT" && auditToken ? { auditToken } : {}),
             }}
             buttonLabel="Bekijk totaal en ga verder"
             disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || !/^(https?:\/\/)?[^\s/.]+\.[^\s]{2,}/i.test(scanUrl.trim())}
