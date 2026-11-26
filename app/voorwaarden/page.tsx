@@ -43,8 +43,8 @@ export default function TermsPage() {
             robots.txt; pagina&apos;s die de website voor onze scanner afschermt, worden niet bekeken.
           </li>
           <li>
-            <strong>Re-scan en Re-scan + adviezen:</strong> een site-audit van de opgegeven website (maximaal 50
-            respectievelijk 100 pagina&apos;s) met een online rapport van de verbeterpunten per pagina, plus een nieuwe
+            <strong>Re-scan en Re-scan + adviezen:</strong> een site-audit van de opgegeven website (maximaal 250
+            respectievelijk 500 pagina&apos;s) met een online rapport van de verbeterpunten per pagina, plus een nieuwe
             SEO- of GEO-scan. De audit volgt robots.txt; pagina&apos;s die de website voor onze scanner afschermt, worden
             niet bekeken. Bij Re-scan + adviezen plannen wij daarnaast per e-mail een adviesgesprek met u in.
           </li>

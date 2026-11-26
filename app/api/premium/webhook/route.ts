@@ -149,7 +149,7 @@ export async function POST(request: Request) {
           email: order.email,
           taxDetails: order.taxDetails,
         });
-        // The paid re-scan includes a site audit (50 or 100 pages); a paid Site-audit opens its report
+        // The paid re-scan includes a site audit (250 or 500 pages); a paid Site-audit opens its report
         // (a free one is unlocked at once, a direct order starts its crawl now). Never blocks the payment.
         let auditToken: string | null = null;
         try {
