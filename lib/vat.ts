@@ -25,6 +25,9 @@ export function getGrossPriceCents(product: string): number {
     case "RE_SCAN_ADV":
       amount = Number(process.env.PREMIUM_PRICE_RESCAN_ADV ?? "249");
       break;
+    case "SITE_AUDIT":
+      amount = Number(process.env.PREMIUM_PRICE_SITE_AUDIT ?? "49");
+      break;
     default:
       throw new VatQuoteError("Unknown product", 400);
   }

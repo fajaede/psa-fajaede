@@ -1,7 +1,7 @@
 import { VatQuoteError } from "@/lib/vat";
 
 /** Version (date) of /voorwaarden and /privacy the customer agrees to at checkout. */
-export const TERMS_VERSION = "2026-11-19";
+export const TERMS_VERSION = "2026-11-26";
 
 /**
  * Checkout consent: terms + privacy accepted, and an explicit request for immediate

@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useRouter } from "next/navigation";
 import { Turnstile, type TurnstileHandle } from "@/components/Turnstile";
 import { rankingText } from "@/lib/ranking-text";
+import { FreeAuditForm } from "@/components/FreeAuditForm";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
@@ -413,6 +414,8 @@ export default function Home() {
           </h2>
           <p style={{ color: "#aaa", margin: 0, fontSize: 16 }}>Geanalyseerd domein: <strong style={{ color: "#fff" }}>{result.url}</strong></p>
           {result.urlReputation && <UrlReputationNotice reputation={result.urlReputation} />}
+          {/* This scan checks one page; the free site audit shows how the rest of the site is doing. */}
+          {result.url && <FreeAuditForm url={result.url} />}
 
           {/* CACHE & PREMIUM UPSELL BANNER ("The Big Boy Way") */}
           {result.fromCache && (

@@ -286,3 +286,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS "PremiumOrder_auditToken_key" ON "PremiumOrder
 
 -- Number of times the customer re-ran the site audit after fixing issues.
 ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "auditReruns" INTEGER NOT NULL DEFAULT 0;
+
+-- Site audit on its own (free part visible, unlocked for a fee).
+ALTER TYPE "Tier" ADD VALUE IF NOT EXISTS 'SITE_AUDIT';
+ALTER TABLE "PremiumOrder" ADD COLUMN IF NOT EXISTS "paidAt" TIMESTAMP(3);
+CREATE INDEX IF NOT EXISTS "PremiumOrder_tier_status_createdAt_idx" ON "PremiumOrder"("tier", "status", "createdAt");

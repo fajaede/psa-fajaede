@@ -9,13 +9,13 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Algemene voorwaarden" updated="19 november 2026">
+    <LegalPage title="Algemene voorwaarden" updated="26 november 2026">
       <Section title="1. Wie zijn wij en wanneer gelden deze voorwaarden?">
         <p style={s.p}>psa.fajaede.nl is een dienst van:</p>
         <CompanyBlock />
         <p style={s.p}>
           Deze voorwaarden gelden voor elk gebruik van psa.fajaede.nl: de gratis scans, het dashboard, de PSA-licentie
-          (Trust Badge) en de SEO/GEO re-scans. Door een scan uit te voeren, een account te gebruiken of een aankoop te
+          (Trust Badge), de site-audit en de SEO/GEO re-scans. Door een scan uit te voeren, een account te gebruiken of een aankoop te
           doen, aanvaardt u deze voorwaarden. Dwingende rechten die u als consument heeft, blijven altijd van toepassing.
         </p>
       </Section>
@@ -34,6 +34,13 @@ export default function TermsPage() {
           <li>
             <strong>PSA-licentie:</strong> maakt de Trust Badge van een gescande website &quot;geverifieerd&quot;. De
             licentie geldt per website, voor één jaar na betaling, en wordt niet automatisch verlengd.
+          </li>
+          <li>
+            <strong>Site-audit:</strong> een controle van maximaal 50 pagina&apos;s van de opgegeven website. De gratis
+            versie toont alle gevonden soorten problemen met hun aantallen en de details van de eerste 10 pagina&apos;s;
+            de link naar het rapport sturen wij per e-mail. Na betaling opent hetzelfde rapport volledig, met alle
+            pagina&apos;s, een CSV-export en 1 keer gratis opnieuw controleren binnen 30 dagen na betaling. De audit volgt
+            robots.txt; pagina&apos;s die de website voor onze scanner afschermt, worden niet bekeken.
           </li>
           <li>
             <strong>Re-scan en Re-scan + adviezen:</strong> een site-audit van de opgegeven website (maximaal 50
@@ -85,14 +92,15 @@ export default function TermsPage() {
 
       <Section title="5. Levering en herroepingsrecht">
         <p style={s.p}>
-          De PSA-licentie en de re-scans zijn digitale diensten. De licentie wordt direct na de bevestiging van uw betaling
-          door Mollie geactiveerd; een re-scan wordt direct na betaling ingepland.
+          De PSA-licentie, de site-audit en de re-scans zijn digitale diensten. De licentie wordt direct na de bevestiging
+          van uw betaling door Mollie geactiveerd; een betaalde site-audit wordt direct ontgrendeld (of, zonder eerdere
+          gratis audit, direct uitgevoerd) en een re-scan wordt direct na betaling ingepland.
         </p>
         <p style={s.p}>
           Als consument heeft u in principe het recht om een overeenkomst op afstand binnen 14 dagen zonder opgave van
           redenen te herroepen. Bij het afrekenen vragen wij u uitdrukkelijk om de dienst direct te leveren en te erkennen
           dat u daardoor uw herroepingsrecht verliest. Is de dienst daarna volledig geleverd, zoals bij de direct
-          geactiveerde PSA-licentie, dan kunt u de aankoop niet meer herroepen (artikel VI.53, 1° en 13° van het
+          geactiveerde PSA-licentie of de direct ontgrendelde site-audit, dan kunt u de aankoop niet meer herroepen (artikel VI.53, 1° en 13° van het
           Wetboek van economisch recht). Herroept u een re-scan of adviesgesprek voordat deze volledig is uitgevoerd, dan
           betalen wij het deel dat nog niet is geleverd binnen 14 dagen terug (artikel VI.51).
         </p>

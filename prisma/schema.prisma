@@ -51,6 +51,7 @@ model GeoScan {
 enum Tier {
   RE_SCAN
   RE_SCAN_ADV
+  SITE_AUDIT // site audit on its own: free part visible, unlocked for a fee
 }
 
 model PremiumOrder {
@@ -66,8 +67,12 @@ model PremiumOrder {
   // Site audit of the paid re-scan (api.fajaede.eu) and the secret token of its results page.
   siteAuditId String?
   auditToken  String?  @unique
-  auditReruns Int      @default(0) // 'Opnieuw controleren' after fixing (max 3 within 30 days)
+  auditReruns Int      @default(0) // 'Opnieuw controleren' after fixing (max per tier within 30 days)
+  // SITE_AUDIT: status 'free' (part of the report visible) until paid; paidAt starts the re-check window.
+  paidAt      DateTime?
   createdAt   DateTime @default(now())
+
+  @@index([tier, status, createdAt])
 }
 
 // One row per paid Mollie payment (PSA license or premium order), used for the
